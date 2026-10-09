@@ -1,0 +1,4 @@
+# Convenience file. The source of truth is pyproject.toml.
+# VS Code (light work):  pip install -e ".[dev]"
+# Colab (ML work):       pip install -e ".[ml,tracking]"
+-e .[dev]

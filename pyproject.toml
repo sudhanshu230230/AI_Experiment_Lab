@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-experiment-lab"
+version = "0.1.0"
+description = "End-to-end ML experimentation and MLOps platform"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "pyyaml",
+    "joblib",
+    "pandera",
+]
+
+[project.optional-dependencies]
+# Phase 1+: installed in Colab for training work
+ml = ["xgboost", "lightgbm", "matplotlib"]
+# Phase 2-4
+tracking = ["mlflow", "optuna"]
+# Phase 5+: serving
+serve = ["fastapi", "uvicorn[standard]", "pydantic"]
+# Phase 6-7
+monitoring = ["prometheus-client", "evidently"]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "api"]

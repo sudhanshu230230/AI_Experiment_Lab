@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+build/
+dist/
+
+# Data and artifacts (never commit datasets or models)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+mlruns/
+mlflow.db
+artifacts/
+*.joblib
+*.pkl
+
+# Secrets and environment
+.env
+*.key
+
+# OS / IDE
+.DS_Store
+.vscode/*
+!.vscode/settings.json
