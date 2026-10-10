@@ -2,26 +2,27 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-10: Phase 1 preprocessing
+
+- Added `preprocessing/pipeline.py`: `split_data` (stratified, seeded, removes id and target), `encode_target`, `NumericCoercer`, `infer_feature_columns`, `build_preprocessing_pipeline` (impute, scale, one-hot inside one sklearn Pipeline).
+- Added `preprocessing:` and `dataset.positive_label` / `dataset.file` to `configs/default.yaml`.
+- Added `tests/test_preprocessing.py` (16 tests, including leakage, unseen-category and serving-consistency tests). Total: 55 tests.
+- Recorded the real dataset hash (`88be4b93...`) in the Phase 1 report.
+
 ## 2026-10-10: Phase 1 validation
 
-- Added `data/validation.py`: config-driven checks returning pass / warn / fail (row count, target exists and valid, required columns, unsupported dtypes, missing fraction incl. blank strings, duplicates, class balance, numeric-like text, constant columns, identifiers) and `raise_if_failed()`.
-- Added `min_rows` to `configs/default.yaml`.
-- Added `tests/test_validation.py` (18 tests); total 36.
+- Added `data/validation.py`: eleven checks (row count, target exists and valid, supported dtypes, missing values including blank strings, duplicates, class balance, numeric-like text, identifier columns, constant columns, optional expected schema) returning PASS / WARN / FAIL, with `report()` and `raise_if_rejected()`.
+- Thresholds come from `configs/default.yaml` (`validation:` section, including `min_rows`).
+- Added `tests/test_validation.py` (21 tests). Total: 39 tests.
 - Added validation cell to `notebooks/01_data_exploration.ipynb`.
+- Recorded the real Telco profile in the Phase 1 report; ADR-003 data issues marked verified.
 
 ## 2026-10-10: Phase 1 started, ingestion and profiling
 
-- Added `data/ingestion.py`: CSV loading, whitespace/blank/numeric-text normalization, SHA-256 dataset version, `DatasetMetadata`.
-- Added `data/profiling.py`: `profile_dataset` (shape, types, missing, duplicates, outliers, categorical summaries, target imbalance, correlations) with a text `summary()`.
-- Added `tests/test_data.py` (21 tests on synthetic data) and `notebooks/01_data_exploration.ipynb`.
-- Added `docs/phases/phase-01-mvp.md` (in progress).
-
-## 2026-10-10: Phase 1 started (ingestion and profiling)
-
-- Added `data/ingestion.py` (CSV loading, SHA-256 dataset version, `DatasetInfo`).
-- Added `data/profiling.py` (shape, types, missing vs blank, duplicates, outliers, correlations, target imbalance, numeric-like text detection, text report).
-- Added `utils/config.py` (YAML loading, data directory resolution).
-- Added `tests/test_data.py` (18 tests with config) and `notebooks/01_data_exploration.ipynb`.
+- Added `data/ingestion.py`: CSV loading (no cleaning), SHA-256 dataset version, `DatasetInfo`.
+- Added `data/profiling.py`: `profile_dataframe` (shape, types, NaN vs blank, duplicates, outliers, categorical summaries, target imbalance, correlations, numeric-like text detection) and `format_report`.
+- Added `utils/config.py`: YAML loading and data directory resolution.
+- Added `tests/test_data.py` (18 tests on synthetic data) and `notebooks/01_data_exploration.ipynb`.
 - Added `docs/phases/phase-01-data-and-baselines.md` (in progress).
 
 ## 2026-10-10: Phase 0 documentation and Colab bootstrap

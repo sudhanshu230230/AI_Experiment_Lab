@@ -5,10 +5,11 @@ project:
 
 dataset:
   name: telco_churn
-  path: data/raw/telco_churn.csv     # in Colab this resolves under the Drive data directory
+  file: Telco-Customer-Churn.csv     # looked up in the data directory (Drive folder in Colab)
   target: Churn
   task: classification               # classification | regression
   id_columns: [customerID]           # excluded from features
+  positive_label: "Yes"               # class encoded as 1 (the class we want to detect)
 
 split:
   test_size: 0.2
@@ -17,7 +18,13 @@ split:
 validation:
   max_missing_fraction: 0.30         # per column
   max_duplicate_fraction: 0.05
-  min_class_fraction: 0.05           # below this, warn about imbalance
+  min_class_fraction: 0.05           # below this, warn about severe imbalance
+  min_rows: 50                       # fewer rows than this is rejected
+
+preprocessing:
+  coerce_numeric: [TotalCharges]     # numbers stored as text; blanks become missing
+  numeric_impute_strategy: median
+  categorical_impute_strategy: most_frequent
 
 selection:
   primary_metric: f1                 # see ADR-003 for rationale; revisit in Phase 1
