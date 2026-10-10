@@ -30,7 +30,9 @@ retention offers are cheap, recall may be weighted more heavily.
 - `customerID` is an identifier and must be excluded from features.
 - `Churn` is a Yes/No string and must be encoded.
 
-(These come from general knowledge of this dataset; confirm them during profiling.)
+(These came from general knowledge of this dataset. **Verified 2026-10-10 on the real file:**
+7,043 rows, 21 columns, 11 blank `TotalCharges` values stored as text, 26.54% churn. See
+`docs/phases/phase-01-data-and-baselines.md`.)
 
 ## Consequences
 - Class imbalance is handled with stratified splits and class weights, and is documented.

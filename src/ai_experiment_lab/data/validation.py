@@ -22,6 +22,7 @@ DEFAULTS = {
     "max_missing_fraction": 0.30,
     "max_duplicate_fraction": 0.05,
     "min_class_fraction": 0.05,
+    "min_rows": 50,
     "max_id_like_unique_ratio": 0.9,
 }
 
@@ -90,6 +91,12 @@ def validate_dataframe(
     th = {**DEFAULTS, **(thresholds or {})}
     id_columns = id_columns or []
     res = ValidationResult()
+
+    # 0. Enough rows to train and evaluate on
+    if len(df) < th["min_rows"]:
+        res.add("row_count", FAIL, f"{len(df)} rows is below the minimum of {th['min_rows']}")
+    else:
+        res.add("row_count", PASS, f"{len(df):,} rows")
 
     # 1. Target exists (everything target-related depends on this)
     if target not in df.columns:
@@ -177,6 +184,7 @@ def validate_dataframe(
         c
         for c in prof["categorical_features"]
         if c not in id_columns
+        and c not in prof["numeric_like_text_features"]  # numbers stored as text, not IDs
         and n_rows > 1
         and df[c].nunique(dropna=True) / n_rows > th["max_id_like_unique_ratio"]
     ]

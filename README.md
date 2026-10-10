@@ -49,7 +49,7 @@ Start at [`docs/README.md`](docs/README.md). Key documents:
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Repo skeleton, docs, Colab bootstrap | Done |
-| 1 | Ingestion, profiling, validation, preprocessing, baselines | In progress (ingestion and profiling done) |
+| 1 | Ingestion, profiling, validation, preprocessing, baselines | Done |
 | 2 | MLflow experiment tracking | Planned |
 | 3 | Optuna hyperparameter optimization | Planned |
 | 4 | Model registry | Planned |

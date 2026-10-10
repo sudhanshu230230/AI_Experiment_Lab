@@ -139,3 +139,24 @@ def test_thresholds_from_real_config():
     cfg = load_config("configs/default.yaml")
     th = validation_thresholds(cfg)
     assert th["max_missing_fraction"] == 0.30
+
+
+def test_min_rows(good):
+    assert status(run(good), "row_count") == "PASS"
+    small = good.iloc[:10]
+    res = run(small)
+    assert status(res, "row_count") == "FAIL"
+    assert not res.accepted
+    assert status(run(small, thresholds={"min_rows": 5}), "row_count") == "PASS"
+
+
+def test_config_thresholds_include_min_rows():
+    th = validation_thresholds(load_config("configs/default.yaml"))
+    assert th["min_rows"] == 50
+
+
+def test_numeric_like_text_not_flagged_as_id(good):
+    good["total"] = [f"{x}.5" for x in range(len(good))]  # almost all unique, but numeric
+    res = run(good)
+    assert status(res, "numeric_like_text") == "WARN"
+    assert not any(c.name == "id_like_columns" for c in res.checks)

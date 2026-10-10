@@ -2,6 +2,12 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-10: Phase 1 complete
+
+- Ran notebooks 01 and 02 in Colab on the real Telco dataset (commit `97bc105`).
+- Recorded results in `docs/experiments/EXP-001-baselines.md`: Logistic Regression and XGBoost tied on CV F1 (0.628 vs 0.612), Random Forest behind (0.540).
+- Phase 1 report marked Complete.
+
 ## 2026-10-10: Phase 1 baselines
 
 - Added `models/classification.py` (`build_classifier`: logistic regression, random forest, XGBoost with auto `scale_pos_weight`).

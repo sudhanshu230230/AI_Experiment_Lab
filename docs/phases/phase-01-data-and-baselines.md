@@ -1,8 +1,8 @@
 # Phase 1 Report: Data, Preprocessing and Baselines
 
-- **Dates:** 2026-10-10 to (in progress)
-- **Git tag:** v0.1-phase1 (not yet created)
-- **Status:** In progress
+- **Dates:** 2026-10-10 to 2026-10-10
+- **Git tag:** v0.1-phase1 (create after pushing)
+- **Status:** Complete
 
 ## Objective
 Take the Telco churn dataset from raw CSV to a comparison of 2-3 baseline models, with
@@ -14,9 +14,9 @@ leakage-safe preprocessing and tests for each step.
 |---|---|---|
 | 4a | Ingestion (`data/ingestion.py`) | Done, unit tested |
 | 4b | Profiling (`data/profiling.py`) | Done, unit tested; run on the real dataset |
-| 5 | Validation (`data/validation.py`) | Done, unit tested on synthetic data; not yet run on the real file |
+| 5 | Validation (`data/validation.py`) | Done; ran on the real file (accepted, with warnings) |
 | 6 | Preprocessing (`preprocessing/pipeline.py`) | Done, unit tested; checked on synthetic data with the real 21-column schema |
-| 7 | Baseline training and evaluation | Code done and unit tested; **awaiting first Colab run** (`notebooks/02_baseline_models.ipynb`, report in `docs/experiments/EXP-001-baselines.md`) |
+| 7 | Baseline training and evaluation | Done; run in Colab (commit `97bc105`), results in `docs/experiments/EXP-001-baselines.md` |
 
 ## How to run it
 - Notebook `notebooks/01_data_exploration.ipynb` in Colab: load, profile, validate.
@@ -40,6 +40,21 @@ Profile of the real dataset, from the first Colab run (2026-10-10):
 Observation: `SeniorCitizen` is stored as 0/1 integers, so the profiler counts it as numeric,
 but it is a binary flag. Harmless for scaling, but worth remembering when reading feature
 importance.
+
+**Validation on the real file:** accepted with warnings for class imbalance (26.5% minority, 2.77:1)
+and `TotalCharges` stored as text. The Colab run used an older `validation.py` that also flagged
+`TotalCharges` as identifier-like; this was fixed (numeric-like text is no longer treated as an ID).
+
+**Baseline results** (full detail in `docs/experiments/EXP-001-baselines.md`):
+
+| Model | CV F1 | Test F1 | Test recall | Test ROC-AUC | Test PR-AUC |
+|---|---|---|---|---|---|
+| Logistic Regression | 0.628 | 0.614 | 0.783 | 0.841 | 0.633 |
+| XGBoost | 0.612 | 0.612 | 0.687 | 0.822 | 0.627 |
+| Random Forest | 0.540 | 0.531 | 0.465 | 0.822 | 0.609 |
+
+Logistic Regression and XGBoost are statistically tied (CV difference is smaller than the fold
+spread); Random Forest is clearly behind. Accuracy would have ranked the models wrongly.
 
 ## Decisions made
 - Ingestion loads data as stored and does not clean it. Cleaning belongs to preprocessing so
@@ -75,12 +90,9 @@ importance.
   for now; threshold tuning is a later experiment.
 
 ## Known limitations
-- Validation has only been tested on synthetic frames; run it on the real file in Colab.
 - Validation thresholds are defaults and have not been tuned on the real dataset.
 - No datetime column handling.
-- Baseline results on the real dataset are not recorded yet (EXP-001 is a skeleton).
 - Models use mostly default hyperparameters on purpose; tuning is Phase 3.
 
 ## Next
-Run notebook 02 in Colab, fill in EXP-001, then close Phase 1: mark the report Complete and tag `v0.1-phase1`.
-Then Phase 2: MLflow experiment tracking (start with the ADR-001 storage spike).
+Phase 2: MLflow experiment tracking, starting with the ADR-001 storage spike (is a Drive-backed MLflow store stable?).
