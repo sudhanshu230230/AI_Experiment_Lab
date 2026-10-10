@@ -48,6 +48,6 @@ Colab Secrets (key icon in the sidebar). Never paste a token into a notebook cel
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `ModuleNotFoundError: ai_experiment_lab` in Colab | Package not installed or runtime restarted | Re-run the setup cell |
+| `ModuleNotFoundError: ai_experiment_lab` in Colab | Running kernel did not pick up the editable install (fixed in setup cell: it adds `src` to `sys.path`); or runtime restarted | Re-run the setup cell |
 | Code changes not visible in Colab | Old commit cloned | Push from VS Code, re-run setup cell (it runs `git pull`) |
 | MLflow runs missing after a session | Store was on Colab local disk | Confirm the tracking URI points to Drive |
