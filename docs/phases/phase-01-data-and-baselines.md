@@ -16,11 +16,12 @@ leakage-safe preprocessing and tests for each step.
 | 4b | Profiling (`data/profiling.py`) | Done, unit tested; run on the real dataset |
 | 5 | Validation (`data/validation.py`) | Done, unit tested on synthetic data; not yet run on the real file |
 | 6 | Preprocessing (`preprocessing/pipeline.py`) | Done, unit tested; checked on synthetic data with the real 21-column schema |
-| 7 | Baseline training and evaluation | Not started |
+| 7 | Baseline training and evaluation | Code done and unit tested; **awaiting first Colab run** (`notebooks/02_baseline_models.ipynb`, report in `docs/experiments/EXP-001-baselines.md`) |
 
 ## How to run it
 - Notebook `notebooks/01_data_exploration.ipynb` in Colab: load, profile, validate.
-- Unit tests: `pytest` (55 tests covering ingestion, profiling, config, validation and preprocessing).
+- Notebook `notebooks/02_baseline_models.ipynb` in Colab: split, train three baselines, compare.
+- Unit tests: `pytest` (67 tests covering ingestion, profiling, config, validation, preprocessing, models, metrics and training).
 
 ## Results
 Profile of the real dataset, from the first Colab run (2026-10-10):
@@ -64,11 +65,22 @@ importance.
   produces all zeros for that feature instead of an error.
 - Missing a required column at serving time raises an error; extra columns are ignored.
 
+- Each baseline is one Pipeline (preprocessing + model). Models are compared by mean 5-fold
+  stratified cross-validated F1 on the training split. The test split is scored once per model
+  and is never used to choose between models, so the test numbers stay an honest estimate.
+- F1 is the primary metric (ADR-003); recall, precision, ROC-AUC and PR-AUC are reported too.
+  Accuracy is reported but not used, since "always No" would score about 73.5%.
+- Imbalance is handled with `class_weight=balanced` (logistic regression, random forest) and
+  `scale_pos_weight` computed from the training labels (XGBoost). The decision threshold stays 0.5
+  for now; threshold tuning is a later experiment.
+
 ## Known limitations
 - Validation has only been tested on synthetic frames; run it on the real file in Colab.
 - Validation thresholds are defaults and have not been tuned on the real dataset.
 - No datetime column handling.
+- Baseline results on the real dataset are not recorded yet (EXP-001 is a skeleton).
+- Models use mostly default hyperparameters on purpose; tuning is Phase 3.
 
 ## Next
-Step 7: baseline models (Logistic Regression, Random Forest, XGBoost) on the preprocessed data, with
-evaluation metrics, in `notebooks/02_baseline_models.ipynb`.
+Run notebook 02 in Colab, fill in EXP-001, then close Phase 1: mark the report Complete and tag `v0.1-phase1`.
+Then Phase 2: MLflow experiment tracking (start with the ADR-001 storage spike).

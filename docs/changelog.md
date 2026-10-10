@@ -2,6 +2,14 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-10: Phase 1 baselines
+
+- Added `models/classification.py` (`build_classifier`: logistic regression, random forest, XGBoost with auto `scale_pos_weight`).
+- Added `evaluation/metrics.py` (accuracy, precision, recall, F1, ROC-AUC, PR-AUC, confusion counts).
+- Added `training/trainer.py` (`run_baselines`: preprocessing + model as one Pipeline, CV-based selection, one-time test scoring).
+- Added tests: `test_models_metrics.py`, `test_training.py`. Total: 67 tests.
+- Added `notebooks/02_baseline_models.ipynb` and `docs/experiments/EXP-001-baselines.md` (results pending the Colab run).
+
 ## 2026-10-10: Phase 1 preprocessing
 
 - Added `preprocessing/pipeline.py`: `split_data` (stratified, seeded, removes id and target), `encode_target`, `NumericCoercer`, `infer_feature_columns`, `build_preprocessing_pipeline` (impute, scale, one-hot inside one sklearn Pipeline).
