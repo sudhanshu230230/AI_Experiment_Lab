@@ -2,6 +2,13 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-10: Phase 1 validation
+
+- Added `data/validation.py`: config-driven checks returning pass / warn / fail (row count, target exists and valid, required columns, unsupported dtypes, missing fraction incl. blank strings, duplicates, class balance, numeric-like text, constant columns, identifiers) and `raise_if_failed()`.
+- Added `min_rows` to `configs/default.yaml`.
+- Added `tests/test_validation.py` (18 tests); total 36.
+- Added validation cell to `notebooks/01_data_exploration.ipynb`.
+
 ## 2026-10-10: Phase 1 started, ingestion and profiling
 
 - Added `data/ingestion.py`: CSV loading, whitespace/blank/numeric-text normalization, SHA-256 dataset version, `DatasetMetadata`.
