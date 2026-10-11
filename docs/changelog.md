@@ -2,6 +2,17 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-11: Setup guide for a new machine
+
+- Rewrote `docs/setup-guide.md` as a complete guide for a fresh Windows machine (tools check, Python, Git identity, clone, venv, dependency groups, VS Code, Colab/Drive, workflow, troubleshooting, macOS/Linux notes).
+- Added `.vscode/settings.json` (pytest, Ruff, venv activation) and `.vscode/extensions.json` (recommended extensions); `.gitignore` now keeps both.
+
+## 2026-10-10: Phase 2 started (ADR-001 spike)
+
+- Checked MLflow docs: file store is legacy and being deprecated; SQLite database is the recommended default.
+- Added `scripts/mlflow_storage_spike.py` (write, concurrent, verify) and `notebooks/spike_mlflow_storage.ipynb`.
+- Rewrote ADR-001 with documentation findings, five options, explicit pass criteria and a results table (results pending the Colab run).
+
 ## 2026-10-10: Phase 1 complete
 
 - Ran notebooks 01 and 02 in Colab on the real Telco dataset (commit `97bc105`).
