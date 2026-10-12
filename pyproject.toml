@@ -22,7 +22,7 @@ dependencies = [
 # Phase 1+: installed in Colab for training work
 ml = ["xgboost", "lightgbm", "matplotlib"]
 # Phase 2-4
-tracking = ["mlflow", "optuna"]
+tracking = ["mlflow>=3.0", "skops", "optuna"]
 # Phase 5+: serving
 serve = ["fastapi", "uvicorn[standard]", "pydantic"]
 # Phase 6-7

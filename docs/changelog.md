@@ -2,6 +2,16 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+
+## 2026-10-12: Phase 2 MLflow tracking
+
+- Added `tracking/mlflow_logger.py`: `setup_tracking`, `log_baseline_results`, `load_pipeline`, `compare_runs`, `backup_tracking_db`, `get_code_version`, `library_versions`, `trusted_types` (skops trusted types for the custom `NumericCoercer`).
+- Added `tests/test_tracking.py` (12 tests). Total: 79 tests.
+- Added `notebooks/03_tracked_baselines.ipynb` with a reproducibility check against EXP-001 (tolerance 5e-4).
+- `pyproject.toml` tracking extra: `mlflow>=3.0`, `skops`, `optuna`. CI now installs `.[dev,ml,tracking]`.
+- Added Phase 2 report (in progress) and EXP-002 skeleton (results pending the Colab run).
+- ADR-001 accepted earlier after the storage spike.
+
 ## 2026-10-12: ADR-001 accepted (MLflow storage)
 
 - Ran the storage spike in Colab: SQLite database and artifacts on Drive work (0.26 s per run, 0 failures, no lock errors with two concurrent writers, data intact after a runtime restart). ADR-001 status changed to Accepted with the results.
