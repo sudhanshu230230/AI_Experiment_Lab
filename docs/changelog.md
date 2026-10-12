@@ -2,6 +2,13 @@
 
 Dated log of project changes, newest first. Entries describe what exists, not what is planned.
 
+## 2026-10-12: ADR-001 accepted (MLflow storage)
+
+- Ran the storage spike in Colab: SQLite database and artifacts on Drive work (0.26 s per run, 0 failures, no lock errors with two concurrent writers, data intact after a runtime restart). ADR-001 status changed to Accepted with the results.
+- Fixed `scripts/mlflow_storage_spike.py`: unique batch labels per run, so repeat runs on a non-empty store are counted exactly (the first run reported FAIL for that reason, not because of data problems).
+- Colab setup cells in all notebooks now use `sqlite:///.../mlflow/mlflow.db` instead of the deprecated `file:` store.
+- New machine verified: Python 3.14.8 on Windows, 67 tests pass.
+
 ## 2026-10-11: Setup guide for a new machine
 
 - Rewrote `docs/setup-guide.md` as a complete guide for a fresh Windows machine (tools check, Python, Git identity, clone, venv, dependency groups, VS Code, Colab/Drive, workflow, troubleshooting, macOS/Linux notes).

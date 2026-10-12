@@ -32,4 +32,4 @@ selection:
 
 tracking:
   experiment_name: telco-churn
-  tracking_uri: null                 # set per environment; see ADR-001
+  tracking_uri: null                 # null = use MLFLOW_TRACKING_URI (Colab setup cell sets the Drive SQLite store; ADR-001)

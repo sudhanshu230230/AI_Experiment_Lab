@@ -1,6 +1,6 @@
 # ADR-001: MLflow tracking and artifact storage
 
-- **Status:** Proposed (spike in progress; decision is finalised when the results below are filled in)
+- **Status:** Accepted (option 1, validated by a spike on 2026-10-12)
 - **Date:** 2026-10-10
 - **Phase:** 2
 
@@ -50,22 +50,41 @@ writers fine), so any failure on Drive is attributable to Drive.
 If 1 or 2 fails, use option 2 (and re-run the spike on that layout) or option 3.
 
 ## Spike results
-*To be filled in after the Colab run.*
+Run in Colab on 2026-10-12, 30 runs per batch (3 params, 3 metrics, 1 artifact each).
 
-| Check | Local disk | Google Drive |
+| Check | Local disk (Colab VM) | Google Drive |
 |---|---|---|
-| write: runs OK / failed | | |
-| time per run | | |
-| concurrent writers | | |
-| persistence after restart | | |
+| write: runs written / failed | 30 / 0 | 30 / 0 (two batches: 60 / 0) |
+| time per run | 0.09 s | 0.26 s |
+| concurrent writers (2 processes x 15 runs, same VM) | not run | 30 / 0 written; 0 "database is locked" messages; 0.42 to 0.47 s per run under contention |
+| persistence after deleting the runtime | n/a | 120 runs found, all with full params, metrics and artifacts |
+
+Against the acceptance criteria: (1) pass, (2) pass, (3) pass (0.26 s is far under 2 s), (4) pass for two
+processes on one VM.
+
+**Note on the FAIL lines in the first run:** the first version of the script labelled every batch with the
+same name and checked the count exactly, so running the cell twice on a non-empty store reported 60 runs
+where 30 were expected. No data was wrong: the final count was 120 = 2 x 30 + 2 x 15 + 2 x 15, with nothing
+lost or duplicated. The script now gives each run a unique label and reports exact counts on repeat runs.
+
+**What the spike did not test:**
+- Two *separate* Colab sessions (different VMs) writing at the same time. The one-writer rule below
+  covers this.
+- Large artifacts (real trained pipelines, tens of MB). Check logging time when Phase 2 logs actual models.
+- Long-term growth of the database.
 
 ## Decision
-*To be written after the results.*
+Use a **SQLite database and file artifacts, both on Google Drive** (option 1), with tracking URI
+`sqlite:////content/drive/MyDrive/ai-experiment-lab/mlflow/mlflow.db` and artifacts under
+`.../mlflow/artifacts`. Options 2 to 4 stay as fallbacks if a later phase needs a shared or always-on
+server (for example when the API needs to read the registry from outside Colab, in Phase 5).
 
 ## Consequences (apply whichever option is chosen)
 - The tracking URI is configuration (`configs/default.yaml`), never hardcoded in code.
-- The Colab setup cell will set the URI from config; the `file:` URI will be removed.
-- One training session writes to the store at a time.
+- The Colab setup cell now sets the SQLite URI on Drive via `MLFLOW_TRACKING_URI`; the `file:` URI has been removed.
+- **Rule: one training session writes to the store at a time** (two Colab sessions were not tested).
+- Keep a backup copy of `mlflow.db` (for example copy it to `mlflow.db.bak` at the end of a session). Add a helper in Phase 2.
+- When the API (Phase 5) must read the registry from outside Colab, revisit hosting (options 3 or 4).
 - Moving to a hosted or self-hosted server later is a config change plus a data migration.
 
 ## Interview note
