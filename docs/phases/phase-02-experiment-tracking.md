@@ -1,8 +1,8 @@
 # Phase 2 Report: Experiment Tracking with MLflow
 
-- **Dates:** 2026-10-11 to in progress
+- **Dates:** 2026-10-11 to 2026-10-12
 - **Git tag:** v0.2-phase2 (create after the Colab run is confirmed)
-- **Status:** In progress (code done and tested locally; Colab run of notebook 03 pending)
+- **Status:** Complete (UI viewing approach deferred, see Known limitations)
 
 ## Objective
 Record every training run (parameters, metrics, dataset hash, code version, model) in MLflow so
@@ -14,9 +14,9 @@ any result can be compared, reproduced and loaded back later.
 |---|---|---|
 | 1 | Storage decision (ADR-001): SQLite + Drive artifacts | Done; spike passed, ADR Accepted |
 | 2 | Tracking module (`tracking/mlflow_logger.py`) | Done; 12 unit tests |
-| 3 | Notebook `03_tracked_baselines.ipynb` | Written; ran locally on synthetic data; Colab run pending |
-| 4 | Reproducibility check against EXP-001 | Built into notebook 03; pending real run |
-| 5 | Backup helper (`backup_tracking_db`) | Done; keeps the newest 3 copies |
+| 3 | Notebook `03_tracked_baselines.ipynb` | Done; run in Colab (commit `c6d18bd`) |
+| 4 | Reproducibility check against EXP-001 | Passed: all metrics match to four decimals (EXP-002) |
+| 5 | Backup helper (`backup_tracking_db`) | Done; used in Colab, backup verified readable (3 runs, 3 models) |
 | 6 | Viewing the runs (MLflow UI) | Open question, see below |
 
 ## How to run it
@@ -36,13 +36,12 @@ any result can be compared, reproduced and loaded back later.
 - The model logged is the same Pipeline that is evaluated (ADR-002), so serving loads exactly what was scored.
 
 ## Acceptance criterion
-Notebook 03 metrics must match EXP-001 within 5e-4 (fixed seed). A mismatch means something
-in the pipeline is non-deterministic and must be understood before Phase 3.
+Notebook 03 metrics must match EXP-001 within 5e-4 (fixed seed). **Met** (EXP-002).
 
 ## Known limitations
 - Two Colab sessions writing at the same time, and very large model artifacts, were not tested.
 - The MLflow signature may warn about integer columns that could contain missing values; harmless here.
-- Viewing: the notebook compares runs as a DataFrame. Using the MLflow UI locally needs the downloaded DB and matching artifact paths; undecided.
+- Viewing (deferred, not blocking): the notebook compares runs as a DataFrame. Using the MLflow UI locally needs the downloaded DB and matching artifact paths; undecided.
 
 ## Next
-Confirm the Colab results, then Phase 3 (Optuna tuning logged as nested MLflow runs), then Phase 4 (model registry).
+Phase 3 (Optuna tuning logged as nested MLflow runs), then Phase 4 (model registry).

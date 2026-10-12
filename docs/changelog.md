@@ -9,7 +9,7 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 - Added `tests/test_tracking.py` (12 tests). Total: 79 tests.
 - Added `notebooks/03_tracked_baselines.ipynb` with a reproducibility check against EXP-001 (tolerance 5e-4).
 - `pyproject.toml` tracking extra: `mlflow>=3.0`, `skops`, `optuna`. CI now installs `.[dev,ml,tracking]`.
-- Added Phase 2 report (in progress) and EXP-002 skeleton (results pending the Colab run).
+- Ran notebook 03 in Colab (commit `c6d18bd`): 3 runs and 3 models logged; EXP-002 reproduces EXP-001 to four decimals. Phase 2 report and EXP-002 completed.
 - ADR-001 accepted earlier after the storage spike.
 
 ## 2026-10-12: ADR-001 accepted (MLflow storage)
