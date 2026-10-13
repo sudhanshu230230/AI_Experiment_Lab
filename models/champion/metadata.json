@@ -1,0 +1,63 @@
+{
+  "source_run_id": "5d24bb7c861d4b1bb581f694ce6e74e9",
+  "model_name": "logistic_regression",
+  "metrics": {
+    "cv_f1": 0.6306762575123429,
+    "cv_f1_std": 0.019795463482413896,
+    "test_accuracy": 0.7444996451383961,
+    "test_precision": 0.5122377622377622,
+    "test_recall": 0.7834224598930482,
+    "test_f1": 0.6194503171247357,
+    "test_roc_auc": 0.8398641142886667,
+    "test_pr_auc": 0.631682640101046,
+    "test_tn": 756.0,
+    "test_fp": 279.0,
+    "test_fn": 81.0,
+    "test_tp": 293.0
+  },
+  "dataset_sha256": "88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a",
+  "dataset_name": "Telco-Customer-Churn",
+  "code_version": "2c568f9",
+  "stage": "tuned",
+  "experiment_id": "EXP-003",
+  "libraries": {
+    "python": "3.13.16",
+    "scikit-learn": "1.6.1",
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
+    "xgboost": "3.4.1",
+    "mlflow": "3.17.0"
+  },
+  "registered_name": "telco-churn-classifier",
+  "registry_version": 1,
+  "alias": "champion",
+  "positive_label": "Yes",
+  "threshold": 0.5,
+  "adr": "ADR-005",
+  "input_columns": [
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges"
+  ],
+  "skops_trusted_types": [
+    "ai_experiment_lab.preprocessing.pipeline.NumericCoercer",
+    "numpy.dtype",
+    "sklearn.compose._column_transformer._RemainderColsList"
+  ]
+}
