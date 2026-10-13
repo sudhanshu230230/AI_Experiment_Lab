@@ -33,3 +33,5 @@ selection:
 tracking:
   experiment_name: telco-churn
   tracking_uri: null                 # null = use MLFLOW_TRACKING_URI (Colab setup cell sets the Drive SQLite store; ADR-001)
+
+# Hyperparameter tuning (trial counts and search spaces): configs/tuning.yaml (ADR-004)

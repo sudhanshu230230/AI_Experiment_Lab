@@ -212,8 +212,14 @@ def compare_runs(
     experiment_name: str,
     order_by: str = "cv_f1",
     tracking_uri: str | None = None,
+    stage: str | None = None,
+    include_trials: bool = False,
 ) -> pd.DataFrame:
-    """Runs of an experiment as a clean table, best first (by a metric name such as 'cv_f1')."""
+    """Runs of an experiment as a clean table, best first (by a metric name such as 'cv_f1').
+
+    ``stage`` keeps only runs with that ``stage`` tag (``baseline`` or ``tuned``). Nested
+    per-trial runs are hidden unless ``include_trials`` is True.
+    """
     mlflow.set_tracking_uri(resolve_tracking_uri(tracking_uri))
     df = mlflow.search_runs(
         experiment_names=[experiment_name],
@@ -221,7 +227,15 @@ def compare_runs(
     )
     if df.empty:
         return df
+    if not include_trials and "tags.stage" in df.columns:
+        df = df[df["tags.stage"] != "trial"]
+    if stage is not None:
+        df = df[df.get("tags.stage") == stage]
+    if df.empty:
+        return df
     out = pd.DataFrame({"run_id": df["run_id"], "model": df["params.model.name"]})
+    if "tags.stage" in df.columns:
+        out["stage"] = df["tags.stage"]
     for col in df.columns:
         if col.startswith("metrics.") and not col.endswith(("_tn", "_fp", "_fn", "_tp")):
             out[col.removeprefix("metrics.")] = df[col]

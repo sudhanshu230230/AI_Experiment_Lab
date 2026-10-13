@@ -1,0 +1,26 @@
+# Optuna search spaces (Phase 3). Fixed (non-searched) params come from model_configs.yaml.
+# type: float | int | categorical.  log: true samples on a log scale.
+# default: the library default, used for trial 0 when model_configs.yaml does not set the
+# parameter, so trial 0 reproduces the baseline wherever the baseline is expressible.
+tuning:
+  n_trials: 40          # per model
+  timeout_seconds: null # optional wall-clock cap per model
+  pruner_startup_trials: 5
+  pruner_warmup_folds: 2
+  spaces:
+    logistic_regression:
+      C: { type: float, low: 0.001, high: 100.0, log: true, default: 1.0 }
+      solver: { type: categorical, choices: [lbfgs, liblinear], default: lbfgs }
+    random_forest:
+      n_estimators: { type: int, low: 100, high: 600 }
+      max_depth: { type: int, low: 3, high: 20 }   # RF baseline is unlimited depth (None): not expressible, so sampled
+      min_samples_leaf: { type: int, low: 1, high: 30, default: 1 }
+      max_features: { type: categorical, choices: [sqrt, log2, 0.5], default: sqrt }
+    xgboost:
+      n_estimators: { type: int, low: 100, high: 600 }
+      learning_rate: { type: float, low: 0.01, high: 0.3, log: true }
+      max_depth: { type: int, low: 2, high: 8 }
+      min_child_weight: { type: float, low: 1.0, high: 20.0, log: true, default: 1.0 }
+      subsample: { type: float, low: 0.6, high: 1.0, default: 1.0 }
+      colsample_bytree: { type: float, low: 0.5, high: 1.0, default: 1.0 }
+      reg_lambda: { type: float, low: 0.01, high: 20.0, log: true, default: 1.0 }
