@@ -4,13 +4,14 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
-## 2026-10-13: Phase 3 Optuna tuning (code)
+## 2026-10-13: Phase 3 Optuna tuning
 
 - Added `tuning/tuner.py`: `tune_model` (CV-F1 objective on the training split, TPE sampler, median pruner, baseline as trial 0, refit, one test score) and `suggest_params`.
 - Added `tracking/tuning_logger.py`: `log_tuning_result` (parent run per model, nested run per trial).
 - Added `configs/tuning.yaml` (search spaces, 40 trials per model).
 - Added `tests/test_tuning.py` (6 tests). Total: 85 tests.
 - Added `notebooks/04_optuna_tuning.ipynb`; ADR-004; Phase 3 report (in progress); EXP-003 skeleton.
+- Ran notebook 04 in Colab: tuned test F1 Random Forest 0.6365 (from 0.5305), XGBoost 0.6317 (from 0.6119), Logistic Regression 0.6195 (from 0.6136). The three are statistically tied. EXP-003 written; Phase 3 report marked complete.
 - Phase 2 closed earlier: EXP-002 reproduced EXP-001 to four decimals.
 
 ## 2026-10-12: Phase 2 MLflow tracking
