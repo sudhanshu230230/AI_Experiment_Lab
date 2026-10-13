@@ -24,7 +24,7 @@ ml = ["xgboost", "lightgbm", "matplotlib"]
 # Phase 2-4
 tracking = ["mlflow>=3.0", "skops", "optuna"]
 # Phase 5+: serving
-serve = ["fastapi", "uvicorn[standard]", "pydantic"]
+serve = ["fastapi", "uvicorn[standard]", "pydantic", "skops"]
 # Phase 6-7
 monitoring = ["prometheus-client", "evidently"]
 dev = ["pytest", "ruff"]

@@ -4,6 +4,15 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+
+## 2026-10-13: Phase 4 model registry (code)
+
+- Added `registry/mlflow_registry.py`: `find_run`, `register_model` (alias + lineage tag), `alias_version`, `load_by_alias`, `run_summary`.
+- Added `registry/export.py`: `export_pipeline` / `load_exported` (skops file + `metadata.json`, trusted types restricted to known packages); usable without MLflow.
+- Added `tests/test_registry.py` (5 tests). Total: 90 tests.
+- Added `notebooks/05_model_registry.ipynb`, ADR-005 (champion = tuned Logistic Regression), Phase 4 report (in progress), `models/README.md`.
+- `pyproject.toml` serve extra now includes `skops`; `.gitignore` allows `models/champion/*.skops`.
+
 ## 2026-10-13: Phase 3 Optuna tuning
 
 - Added `tuning/tuner.py`: `tune_model` (CV-F1 objective on the training split, TPE sampler, median pruner, baseline as trial 0, refit, one test score) and `suggest_params`.

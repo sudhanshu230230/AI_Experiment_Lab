@@ -20,6 +20,8 @@ mlflow.db
 artifacts/
 *.joblib
 *.pkl
+*.skops
+!models/champion/*.skops
 
 # Secrets and environment
 .env
