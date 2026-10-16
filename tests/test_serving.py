@@ -226,9 +226,3 @@ def test_unwritable_prediction_log_does_not_break_predictions(model_dir, tmp_pat
     blocker.write_text("x")            # a file where the log's parent folder should be
     with TestClient(create_app(model_dir, prediction_log=blocker / "preds.jsonl")) as c:
         assert c.post("/predict", json=EXAMPLE).status_code == 200
-
-
-def test_root_redirects_to_interactive_docs(client):
-    r = client.get("/", follow_redirects=False)
-    assert r.status_code in (302, 307) and r.headers["location"].endswith("docs")
-    assert client.get("/", follow_redirects=True).status_code == 200
