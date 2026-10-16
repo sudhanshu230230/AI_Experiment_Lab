@@ -13,6 +13,7 @@ dist/
 # Data and artifacts (never commit datasets or models)
 data/raw/*
 data/processed/*
+data/predictions/
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 mlruns/

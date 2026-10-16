@@ -1,0 +1,33 @@
+# Local monitoring stack (Phase 6):  docker compose up --build
+#   API         http://localhost:7860   (docs at /docs, metrics at /metrics)
+#   Prometheus  http://localhost:9090   (targets, alerts)
+#   Grafana     http://localhost:3000   (dashboard "Churn API"; anonymous viewer, admin/admin to edit)
+# Needs models/champion/ (export it with notebook 05 first).
+services:
+  api:
+    build: .
+    ports: ["7860:7860"]
+    environment:
+      PREDICTION_LOG: /data/predictions.jsonl
+    volumes:
+      - ./data/predictions:/data
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    ports: ["9090:9090"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on: [api]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    ports: ["3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/churn-api.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]

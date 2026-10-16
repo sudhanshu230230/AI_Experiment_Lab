@@ -12,6 +12,7 @@ The service serves the exported champion model (`models/champion/`, ADR-005) and
 | GET | `/model` | Registry name and version, source run, metrics, dataset hash, code and library versions, threshold, input columns. 503 if no model |
 | POST | `/predict` | One customer in, one prediction out |
 | POST | `/predict/batch` | `{"customers": [...]}` with 1 to 1000 customers; predictions come back in the same order |
+| GET | `/metrics` | Prometheus metrics (see `docs/monitoring-and-drift.md`); not counted in its own metrics, hidden from `/docs` |
 
 ## Request: one customer (`POST /predict`)
 
