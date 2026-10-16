@@ -1,6 +1,6 @@
 # Deployment
 
-**Status:** Image, Render blueprint and Hugging Face script implemented (Phase 5); first deployment pending (see the Phase 5 report). Decisions: ADR-006 (including the 2026-10-16 amendment).
+**Status:** Deployed on Render (2026-10-16): https://churn-api-xop3.onrender.com (`/docs`, `/health`). Image, Render blueprint and Hugging Face script implemented (Phase 5). Decisions: ADR-006 (including the 2026-10-16 amendment).
 
 ## What is deployed
 A Docker image (`Dockerfile`) running the FastAPI service with the exported champion model baked in (`models/champion/`). It needs no database, Drive or MLflow at runtime.
@@ -21,6 +21,8 @@ python scripts/smoke_test_api.py http://127.0.0.1:7860
 If Docker Desktop is too heavy for the laptop, skip this: CI builds and smoke-tests the image on every push once `models/champion/model.skops` is committed (`.github/workflows/ci.yml`, job `docker`).
 
 ## Deploy to Render (primary target, free)
+**Live service:** https://churn-api-xop3.onrender.com. The bare URL redirects to `/docs`. The smoke test passed 6 of 6 checks against it on 2026-10-16 (first deployment). Steps to reproduce it:
+
 Render builds the Dockerfile straight from the GitHub repository, so `models/champion/` must be committed and pushed first. `render.yaml` at the repo root describes the service (Docker runtime, free plan, health check `/health`, `PORT=10000`, manual deploys).
 
 1. Sign up at render.com (sign in with GitHub is easiest). The free web service does not list a card requirement in Render's docs; if the dashboard asks for a payment method for a *free* service, stop and tell me.

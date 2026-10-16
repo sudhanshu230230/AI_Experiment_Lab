@@ -10,6 +10,7 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 ## 2026-10-16: Deployment target moved to Render
 
+- First deployment verified: https://churn-api-xop3.onrender.com passed all 6 smoke checks. The bare URL gave 404, so `/` now redirects to `/docs`.
 - Hugging Face Docker Spaces now require a paid plan, so the primary target is Render (free). Added `render.yaml`; `smoke_test_api.py` gained `--wait SECONDS` for cold starts; `docs/deployment.md` rewritten with the Render steps (Hugging Face kept as a paid alternative); ADR-006 amended; Phase 5 report updated.
 
 ## 2026-10-16: Phase 6 monitoring (code)

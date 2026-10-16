@@ -163,3 +163,72 @@ def test_schema_mismatch_with_model_is_reported_as_degraded(tmp_path):
     export_pipeline(pipe, tmp_path / "m", {})
     with TestClient(create_app(tmp_path / "m")) as c:
         assert c.get("/health").json()["status"] == "degraded"
+
+
+# ---- Prometheus metrics (Phase 6) ------------------------------------------------------------
+
+def _metric(client, name, labels=None):
+    """Value of one sample from /metrics, or None if absent."""
+    from prometheus_client.parser import text_string_to_metric_families
+
+    for fam in text_string_to_metric_families(client.get("/metrics").text):
+        for sample in fam.samples:
+            if sample.name == name and all(sample.labels.get(k) == v for k, v in (labels or {}).items()):
+                return sample.value
+    return None
+
+
+def test_metrics_count_requests_by_route_template_and_status(client):
+    client.post("/predict", json=EXAMPLE)
+    client.post("/predict", json={**EXAMPLE, "Contract": "Weekly"})
+    client.get("/does-not-exist")
+    ok = {"method": "POST", "path": "/predict", "status": "200"}
+    bad = {"method": "POST", "path": "/predict", "status": "422"}
+    assert _metric(client, "ael_http_requests_total", ok) == 1
+    assert _metric(client, "ael_http_requests_total", bad) == 1
+    assert _metric(client, "ael_http_requests_total", {"path": "unmatched", "status": "404"}) == 1
+    assert _metric(client, "ael_http_request_duration_seconds_count", {"path": "/predict"}) == 2
+
+
+def test_metrics_endpoint_itself_is_not_counted(client):
+    client.get("/metrics")
+    client.get("/metrics")
+    assert _metric(client, "ael_http_requests_total", {"path": "/metrics"}) is None
+
+
+def test_prediction_metrics_count_each_prediction_in_a_batch(client):
+    client.post("/predict/batch", json={"customers": [EXAMPLE, EXAMPLE, EXAMPLE]})
+    yes = _metric(client, "ael_predictions_total", {"prediction": "Yes"}) or 0
+    no = _metric(client, "ael_predictions_total", {"prediction": "No"}) or 0
+    assert yes + no == 3
+    assert _metric(client, "ael_churn_probability_count") == 3
+    assert _metric(client, "ael_churn_probability_bucket", {"le": "1.0"}) == 3
+
+
+def test_model_info_and_loaded_gauges(client, tmp_path):
+    assert _metric(client, "ael_model_loaded") == 1
+    assert _metric(client, "ael_model_info", {"version": "3", "registered_name": "churn-model"}) == 1
+    with TestClient(create_app(tmp_path / "nope")) as c:
+        assert _metric(c, "ael_model_loaded") == 0
+        assert _metric(c, "ael_model_info") is None
+
+
+def test_each_app_has_its_own_registry(model_dir):
+    with TestClient(create_app(model_dir)) as a, TestClient(create_app(model_dir)) as b:
+        a.post("/predict", json=EXAMPLE)
+        assert _metric(a, "ael_predictions_total", {"prediction": "Yes"}) is not None or \
+            _metric(a, "ael_predictions_total", {"prediction": "No"}) is not None
+        assert _metric(b, "ael_http_requests_total", {"path": "/predict"}) is None
+
+
+def test_unwritable_prediction_log_does_not_break_predictions(model_dir, tmp_path):
+    blocker = tmp_path / "file_not_dir"
+    blocker.write_text("x")            # a file where the log's parent folder should be
+    with TestClient(create_app(model_dir, prediction_log=blocker / "preds.jsonl")) as c:
+        assert c.post("/predict", json=EXAMPLE).status_code == 200
+
+
+def test_root_redirects_to_interactive_docs(client):
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code in (302, 307) and r.headers["location"].endswith("docs")
+    assert client.get("/", follow_redirects=True).status_code == 200

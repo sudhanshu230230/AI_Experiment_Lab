@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import threading
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from importlib import metadata as importlib_metadata
@@ -19,9 +20,11 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 
 from ai_experiment_lab.registry.export import load_exported
+from ai_experiment_lab.serving.metrics import CONTENT_TYPE, Metrics
 from ai_experiment_lab.serving.schemas import (
     BatchRequest,
     BatchResponse,
@@ -37,7 +40,9 @@ DEFAULT_MODEL_DIR = "models/champion"
 class ModelService:
     """Holds the loaded pipeline and turns validated requests into predictions."""
 
-    def __init__(self, model_dir: str | Path, prediction_log: str | Path | None = None):
+    def __init__(self, model_dir: str | Path, prediction_log: str | Path | None = None,
+                 metrics: Metrics | None = None):
+        self.metrics = metrics
         self.pipeline, self.meta = load_exported(model_dir)
         self.columns: list[str] = list(self.meta["input_columns"])
         self.threshold = float(self.meta.get("threshold", 0.5))
@@ -70,6 +75,8 @@ class ModelService:
             )
             for p in proba
         ]
+        if self.metrics is not None:
+            self.metrics.observe_predictions(out)
         self._log(customers, out)
         return out
 
@@ -84,25 +91,35 @@ class ModelService:
             )
             for c, p in zip(customers, preds, strict=True)
         ]
-        with self._lock, self._log_path.open("a", encoding="utf-8") as fh:
-            fh.write("\n".join(lines) + "\n")
+        try:
+            with self._lock:
+                self._log_path.parent.mkdir(parents=True, exist_ok=True)
+                with self._log_path.open("a", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines) + "\n")
+        except OSError:
+            # A full disk or a read-only mount must never turn a good prediction into a 500.
+            log.exception("Could not write the prediction log %s", self._log_path)
 
 
 def create_app(model_dir: str | Path | None = None,
                prediction_log: str | Path | None = None) -> FastAPI:
     """Build the app. Arguments override the environment variables (used by tests)."""
 
+    metrics = Metrics()
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         mdir = model_dir or os.environ.get("MODEL_DIR", DEFAULT_MODEL_DIR)
         plog = prediction_log or os.environ.get("PREDICTION_LOG")
         try:
-            app.state.service = ModelService(mdir, plog)
+            app.state.service = ModelService(mdir, plog, metrics)
+            metrics.set_model(app.state.service.meta)
             log.info("Loaded model from %s (version %s)", mdir, app.state.service.version)
         except Exception:
             # Stay up so /health can report 'degraded' instead of crash-looping silently.
             log.exception("Could not load model from %s", mdir)
             app.state.service = None
+            metrics.set_model(None)
         yield
 
     app = FastAPI(
@@ -111,6 +128,29 @@ def create_app(model_dir: str | Path | None = None,
         description="Serves the registry champion (see docs/decisions/ADR-005).",
         lifespan=lifespan,
     )
+
+    @app.middleware("http")
+    async def record_metrics(request: Request, call_next):
+        start = time.perf_counter()
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            return response
+        finally:
+            route = request.scope.get("route")
+            path = getattr(route, "path", "unmatched")
+            if path != "/metrics":
+                metrics.observe_request(request.method, path, status, time.perf_counter() - start)
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        """The bare URL opens the interactive API documentation."""
+        return RedirectResponse(url="docs")
+
+    @app.get("/metrics", include_in_schema=False)
+    def prometheus_metrics() -> Response:
+        return Response(metrics.render(), media_type=CONTENT_TYPE)
 
     def service(request: Request) -> ModelService:
         svc = request.app.state.service
