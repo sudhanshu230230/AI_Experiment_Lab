@@ -5,7 +5,7 @@
 - **Status:** In progress (API, image, deploy script, tests done; real champion export and first deployment pending)
 
 ## Objective
-Serve the registry champion behind a validated HTTP API in a Docker image, and deploy it to a public free host.
+Serve the registry champion behind a validated HTTP API in a Docker image, and deploy it to a public free host (Render; see the ADR-006 amendment).
 
 ## Progress by step
 
@@ -16,9 +16,9 @@ Serve the registry champion behind a validated HTTP API in a Docker image, and d
 | 3 | Dockerfile, `.dockerignore` | Written; not built here (no Docker daemon in the authoring environment) |
 | 4 | Smoke test script (`scripts/smoke_test_api.py`) | Done; passes against a local server, including one started from a clean `.[serve]`-only virtualenv |
 | 5 | CI job that builds the image and smoke-tests it | Written; runs once `models/champion/model.skops` is committed |
-| 6 | Deploy script (`scripts/deploy_hf_space.py`) | Done; `--dry-run` staging verified, upload not run here |
+| 6 | Deploy configuration: `render.yaml` (primary, free) and `scripts/deploy_hf_space.py` (alternative, paid; `--dry-run` staging verified) | Done; neither deployed yet |
 | 7 | Real champion export committed (`models/champion/`) | Pending the Phase 4 Colab run |
-| 8 | First deployment and public smoke test | Pending |
+| 8 | First deployment on Render and public smoke test (`--wait` handles cold start) | Pending |
 
 ## How to run it
 See `docs/api-reference.md` (local run) and `docs/deployment.md` (Docker and Hugging Face).
@@ -36,8 +36,12 @@ See `docs/api-reference.md` (local run) and `docs/deployment.md` (Docker and Hug
 ## Decisions made
 See ADR-006.
 
+## Change during the phase
+The target moved from Hugging Face Spaces to Render on 2026-10-16: Docker Spaces now need a paid plan (ADR-006 amendment).
+
 ## Known limitations
-- Docker image not yet built anywhere; first build is in CI or on the user's machine.
+- Docker image not yet built anywhere; first build is in CI or on Render.
+- Render's docs do not explicitly confirm Docker services on the free plan; the first deployment settles it.
 - No authentication or rate limiting (demo scope).
 - Dependencies other than scikit-learn are not pinned.
 

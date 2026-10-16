@@ -6,6 +6,21 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+
+
+## 2026-10-16: Deployment target moved to Render
+
+- Hugging Face Docker Spaces now require a paid plan, so the primary target is Render (free). Added `render.yaml`; `smoke_test_api.py` gained `--wait SECONDS` for cold starts; `docs/deployment.md` rewritten with the Render steps (Hugging Face kept as a paid alternative); ADR-006 amended; Phase 5 report updated.
+
+## 2026-10-16: Phase 6 monitoring (code)
+
+- Added `serving/metrics.py` and `/metrics`: request count and latency by route template and status, prediction counts by class, probability histogram, model loaded/info gauges. One registry per app.
+- Added `monitoring/` (Prometheus config, five alert rules, Grafana datasource and dashboard provisioning, 12-panel "Churn API" dashboard) and `docker-compose.yml`.
+- Added `scripts/load_generator.py` (normal, `--drift` and `--bad-fraction` traffic).
+- Prediction-log write errors no longer fail a request. `prometheus-client` added to the `serve` extra; `data/predictions/` git-ignored.
+- Added 6 tests (`tests/test_serving.py`). Total: 118 tests.
+- Rewrote `docs/monitoring-and-drift.md` (monitoring part); added ADR-007 and the Phase 6 report (in progress).
+
 ## 2026-10-16: Phase 5 serving API, Docker, deployment (code)
 
 - Added `serving/app.py` and `serving/schemas.py`: FastAPI service (`/health`, `/model`, `/predict`, `/predict/batch`), strict validation, startup schema check, optional JSONL prediction log.

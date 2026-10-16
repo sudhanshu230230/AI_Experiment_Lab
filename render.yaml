@@ -1,0 +1,18 @@
+# Render Blueprint: deploys the serving image from the Dockerfile at the repo root.
+# Dashboard: New > Blueprint > pick this repository > Apply.  Docs: docs/deployment.md
+services:
+  - type: web
+    name: churn-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    healthCheckPath: /health
+    # Redeploy only when you press "Manual Deploy" (or via CI in Phase 9), so docs-only pushes
+    # do not spend free build minutes.
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PORT
+        value: "10000"

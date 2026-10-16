@@ -1,13 +1,18 @@
 """Smoke test for a running prediction API (local, Docker, or deployed).
 
 Usage:  python scripts/smoke_test_api.py http://127.0.0.1:7860
-Uses only the standard library. Exit code 0 = all checks passed.
+        python scripts/smoke_test_api.py https://churn-api.onrender.com --wait 120
+
+--wait SECONDS keeps polling /health until the service answers (free hosts sleep when idle and
+need about a minute to wake up). Uses only the standard library. Exit code 0 = all checks passed.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -32,8 +37,27 @@ def call(base: str, path: str, payload=None):
         return e.code, None
 
 
-def main(base: str) -> int:
+def wait_until_up(base: str, seconds: float) -> bool:
+    """Poll /health until it returns 200 or the time runs out."""
+    deadline = time.time() + seconds
+    while True:
+        try:
+            status, _ = call(base, "/health")
+            if status == 200:
+                return True
+        except (urllib.error.URLError, OSError):
+            pass
+        if time.time() >= deadline:
+            return False
+        print("waiting for the service to wake up ...")
+        time.sleep(5)
+
+
+def main(base: str, wait: float = 0) -> int:
     base = base.rstrip("/")
+    if wait and not wait_until_up(base, wait):
+        print(f"FAIL  service did not answer /health within {wait:.0f} s")
+        return 1
     results: list[tuple[str, bool]] = []
 
     def check(name: str, ok: bool) -> None:
@@ -63,4 +87,8 @@ def main(base: str) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:7860"))
+    ap = argparse.ArgumentParser(description="Smoke test for the prediction API")
+    ap.add_argument("url", nargs="?", default="http://127.0.0.1:7860")
+    ap.add_argument("--wait", type=float, default=0, help="seconds to wait for the service to come up")
+    args = ap.parse_args()
+    sys.exit(main(args.url, args.wait))
