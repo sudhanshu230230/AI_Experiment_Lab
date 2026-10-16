@@ -27,7 +27,7 @@ tracking = ["mlflow>=3.0", "skops", "optuna"]
 serve = ["fastapi", "uvicorn[standard]", "pydantic", "skops"]
 # Phase 6-7
 monitoring = ["prometheus-client", "evidently"]
-dev = ["pytest", "ruff"]
+dev = ["pytest", "ruff", "httpx"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

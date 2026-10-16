@@ -1,3 +1,3 @@
 # api/
 
-FastAPI service (Phase 5). Not implemented yet. See `docs/api-reference.md`.
+The prediction API lives in the package: `src/ai_experiment_lab/serving/`. See `docs/api-reference.md`.

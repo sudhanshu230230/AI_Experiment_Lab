@@ -15,8 +15,37 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev,ml,tracking]"
+        run: pip install -e ".[dev,ml,tracking,serve]"
       - name: Lint
         run: ruff check .
       - name: Test
         run: pytest
+
+  docker:
+    # Builds the serving image and smoke-tests it. Skipped until the exported champion
+    # model (models/champion) has been committed.
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for exported model
+        id: model
+        run: |
+          if [ -f models/champion/model.skops ]; then echo "present=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Build image
+        if: steps.model.outputs.present == 'true'
+        run: docker build -t ael-api .
+      - name: Run container
+        if: steps.model.outputs.present == 'true'
+        run: docker run -d --name ael -p 7860:7860 ael-api
+      - name: Smoke test
+        if: steps.model.outputs.present == 'true'
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:7860/health >/dev/null && break
+            sleep 2
+          done
+          python3 scripts/smoke_test_api.py http://127.0.0.1:7860
+      - name: Container logs on failure
+        if: failure() && steps.model.outputs.present == 'true'
+        run: docker logs ael

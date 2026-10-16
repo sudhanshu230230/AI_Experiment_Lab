@@ -5,6 +5,16 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+
+## 2026-10-16: Phase 5 serving API, Docker, deployment (code)
+
+- Added `serving/app.py` and `serving/schemas.py`: FastAPI service (`/health`, `/model`, `/predict`, `/predict/batch`), strict validation, startup schema check, optional JSONL prediction log.
+- Added `Dockerfile`, `.dockerignore`, `scripts/smoke_test_api.py`, `scripts/deploy_hf_space.py` (Hugging Face Space deploy, with `--dry-run`).
+- CI: added a `docker` job that builds and smoke-tests the image once `models/champion/model.skops` exists; test job installs the `serve` extra.
+- Added `tests/test_serving.py` (22 tests). Total: 112 tests.
+- Fixed: non-numeric `TotalCharges` text caused a 500 instead of a 422 (found by a test).
+- Filled in `docs/api-reference.md` and `docs/deployment.md`; added ADR-006 and the Phase 5 report (in progress).
+
 ## 2026-10-13: Phase 4 model registry (code)
 
 - Added `registry/mlflow_registry.py`: `find_run`, `register_model` (alias + lineage tag), `alias_version`, `load_by_alias`, `run_summary`.

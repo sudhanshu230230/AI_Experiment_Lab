@@ -1,0 +1,165 @@
+"""Tests for the prediction API, using a small model exported from synthetic Telco-shaped data."""
+
+import json
+
+import numpy as np
+import pandas as pd
+import pytest
+
+pytest.importorskip("fastapi")
+pytest.importorskip("httpx")
+pytest.importorskip("skops")
+
+from fastapi.testclient import TestClient
+
+from ai_experiment_lab.preprocessing import split_data
+from ai_experiment_lab.registry import export_pipeline
+from ai_experiment_lab.serving.app import create_app
+from ai_experiment_lab.serving.schemas import CustomerFeatures
+from ai_experiment_lab.training.trainer import make_model_pipeline
+
+PRE = {"coerce_numeric": ["TotalCharges"]}
+EXAMPLE = CustomerFeatures.model_config["json_schema_extra"]["example"]
+
+
+def _synthetic_telco(n: int = 400) -> pd.DataFrame:
+    rng = np.random.default_rng(0)
+    yn = ["Yes", "No"]
+    yni = ["Yes", "No", "No internet service"]
+    tenure = rng.integers(0, 72, n)
+    contract = rng.choice(["Month-to-month", "One year", "Two year"], n)
+    monthly = rng.uniform(20, 110, n).round(2)
+    logit = -1.0 + 2.0 * (contract == "Month-to-month") - 0.04 * tenure
+    churn = rng.random(n) < 1 / (1 + np.exp(-logit))
+    df = pd.DataFrame(
+        {
+            "customerID": [f"C{i}" for i in range(n)],
+            "gender": rng.choice(["Male", "Female"], n),
+            "SeniorCitizen": rng.integers(0, 2, n),
+            "Partner": rng.choice(yn, n),
+            "Dependents": rng.choice(yn, n),
+            "tenure": tenure,
+            "PhoneService": rng.choice(yn, n),
+            "MultipleLines": rng.choice(["Yes", "No", "No phone service"], n),
+            "InternetService": rng.choice(["DSL", "Fiber optic", "No"], n),
+            "OnlineSecurity": rng.choice(yni, n),
+            "OnlineBackup": rng.choice(yni, n),
+            "DeviceProtection": rng.choice(yni, n),
+            "TechSupport": rng.choice(yni, n),
+            "StreamingTV": rng.choice(yni, n),
+            "StreamingMovies": rng.choice(yni, n),
+            "Contract": contract,
+            "PaperlessBilling": rng.choice(yn, n),
+            "PaymentMethod": rng.choice(
+                ["Electronic check", "Mailed check", "Bank transfer (automatic)",
+                 "Credit card (automatic)"], n),
+            "MonthlyCharges": monthly,
+            "Churn": np.where(churn, "Yes", "No"),
+        }
+    )
+    df["TotalCharges"] = (tenure * monthly).round(2).astype(str)
+    df.loc[df.tenure == 0, "TotalCharges"] = " "
+    return df
+
+
+@pytest.fixture(scope="module")
+def model_dir(tmp_path_factory):
+    split = split_data(_synthetic_telco(), "Churn", "Yes", id_columns=["customerID"], seed=1)
+    pipe = make_model_pipeline(
+        "logistic_regression", split, {"max_iter": 300, "class_weight": "balanced"}, PRE, 1
+    )
+    pipe.fit(split.X_train, split.y_train)
+    out = tmp_path_factory.mktemp("champion")
+    export_pipeline(pipe, out, {"registered_name": "churn-model", "registry_version": 3,
+                                "alias": "champion", "positive_label": "Yes", "threshold": 0.5,
+                                "metrics": {"test_f1": 0.6}, "libraries": {}})
+    return out
+
+
+@pytest.fixture()
+def client(model_dir):
+    with TestClient(create_app(model_dir)) as c:
+        yield c
+
+
+def test_health_and_model_info(client):
+    assert client.get("/health").json() == {"status": "ok", "model_loaded": True}
+    info = client.get("/model").json()
+    assert info["registry_version"] == 3 and len(info["input_columns"]) == 19
+
+
+def test_predict_returns_valid_probability_and_consistent_label(client):
+    r = client.post("/predict", json=EXAMPLE)
+    assert r.status_code == 200
+    body = r.json()
+    assert 0 <= body["churn_probability"] <= 1 and body["model_version"] == 3
+    assert body["prediction"] == ("Yes" if body["churn_probability"] >= 0.5 else "No")
+
+
+@pytest.mark.parametrize("total", [None, "", " ", 0, "123.4", 99.5])
+def test_total_charges_accepts_blank_text_number_and_null(client, total):
+    assert client.post("/predict", json={**EXAMPLE, "TotalCharges": total}).status_code == 200
+
+
+def test_batch_matches_single_predictions(client):
+    other = {**EXAMPLE, "Contract": "Two year", "tenure": 60}
+    singles = [client.post("/predict", json=c).json()["churn_probability"] for c in (EXAMPLE, other)]
+    batch = client.post("/predict/batch", json={"customers": [EXAMPLE, other]}).json()
+    assert [p["churn_probability"] for p in batch["predictions"]] == singles
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {**{k: v for k, v in EXAMPLE.items() if k != "tenure"}},          # missing field
+        {**EXAMPLE, "Contract": "Weekly"},                                # unknown category
+        {**EXAMPLE, "tenure": -1},                                        # out of range
+        {**EXAMPLE, "MonthlyCharges": "abc"},                             # wrong type
+        {**EXAMPLE, "extra_field": 1},                                    # misspelt/extra field
+    ],
+)
+def test_invalid_requests_are_rejected_with_422(client, bad):
+    assert client.post("/predict", json=bad).status_code == 422
+
+
+def test_batch_limits(client):
+    assert client.post("/predict/batch", json={"customers": []}).status_code == 422
+    assert client.post("/predict/batch", json={"customers": [EXAMPLE] * 1001}).status_code == 422
+
+
+@pytest.mark.parametrize("bad_total", ["n/a", "12abc", -5, "-1"])
+def test_bad_total_charges_is_a_422_not_a_crash(client, bad_total):
+    assert client.post("/predict", json={**EXAMPLE, "TotalCharges": bad_total}).status_code == 422
+
+
+def test_missing_model_gives_degraded_health_and_503(tmp_path):
+    with TestClient(create_app(tmp_path / "nope")) as c:
+        assert c.get("/health").json() == {"status": "degraded", "model_loaded": False}
+        assert c.post("/predict", json=EXAMPLE).status_code == 503
+        assert c.get("/model").status_code == 503
+
+
+def test_prediction_log_records_features_and_version(model_dir, tmp_path):
+    log_path = tmp_path / "preds.jsonl"
+    with TestClient(create_app(model_dir, prediction_log=log_path)) as c:
+        c.post("/predict", json=EXAMPLE)
+        c.post("/predict/batch", json={"customers": [EXAMPLE, EXAMPLE]})
+    rows = [json.loads(line) for line in log_path.read_text().splitlines()]
+    assert len(rows) == 3 and rows[0]["model_version"] == 3
+    assert rows[0]["features"]["Contract"] == "Month-to-month" and "ts" in rows[0]
+
+
+def test_schema_mismatch_with_model_is_reported_as_degraded(tmp_path):
+    split = split_data(_synthetic_telco(), "Churn", "Yes", id_columns=["customerID"], seed=1)
+    X = split.X_train.drop(columns=["gender"])
+    from sklearn.pipeline import Pipeline
+
+    from ai_experiment_lab.models import build_classifier
+    from ai_experiment_lab.preprocessing import build_preprocessing_pipeline
+
+    pipe = Pipeline([("preprocess", build_preprocessing_pipeline(X, coerce_numeric=["TotalCharges"])),
+                     ("model", build_classifier("logistic_regression", {"max_iter": 200}))])
+    pipe.fit(X, split.y_train)
+    export_pipeline(pipe, tmp_path / "m", {})
+    with TestClient(create_app(tmp_path / "m")) as c:
+        assert c.get("/health").json()["status"] == "degraded"
