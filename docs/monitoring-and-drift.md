@@ -1,6 +1,6 @@
 # Monitoring and Drift
 
-**Status:** Monitoring implemented (Phase 6). Drift detection: not started (Phase 7).
+**Status:** Monitoring implemented (Phase 6). Drift detection implemented (Phase 7); real-data results pending.
 
 ## 1. Operational monitoring (Phase 6)
 
@@ -57,4 +57,33 @@ They show the service is up, fast and answering, and give a coarse early signal 
 
 ## 2. Data and model drift (Phase 7)
 
-Not started. Plan: Evidently reports comparing the training data (reference) with the logged production inputs (`PREDICTION_LOG`), a drift-share threshold that triggers retraining (Phase 8), and an honest note about performance monitoring needing delayed labels.
+Decisions: ADR-008. Settings: `configs/monitoring.yaml`.
+
+### What is compared
+Reference = the training split. Current = logged production inputs (the API writes them when `PREDICTION_LOG` is set; `docker compose` does this). Each feature gets a KS test (numeric) or chi-square test (categorical) and a PSI. A feature has **drifted** only if PSI >= 0.2 **and** p < 0.05. The dataset verdict is:
+
+| Verdict | Meaning |
+|---|---|
+| `no_drift` | fewer than 30% of features drifted |
+| `drift` | 30% or more drifted: candidate trigger for retraining (Phase 8) |
+| `insufficient_data` | fewer than 100 current rows; no decision is made |
+
+The mean/shape of the predicted probability is also tested and reported, but does not affect the verdict.
+
+### Run it on logged traffic
+```powershell
+docker compose up --build -d
+python scripts/load_generator.py --drift --rate 10 --duration 120     # shifted customers
+python scripts/check_drift.py --data data/raw/Telco-Customer-Churn.csv `
+    --log data/predictions/predictions.jsonl --out reports/drift.json
+```
+Add `--fail-on-drift` to exit with code 1 on a `drift` verdict (used by the retraining workflow). `--model-version N` limits the check to one model version.
+
+### Readable report in Colab
+`notebooks/06_drift_detection.ipynb` runs the scenarios, a sensitivity table (shift strength vs verdict), a drift-versus-performance check and an Evidently HTML report saved to Drive (`reports/drift/`).
+
+### What drift does and does not mean
+- Drift says the **inputs** changed. It does not say the model got worse: a shifted population can leave ranking quality (ROC AUC) intact while changing the churn rate, precision and recall.
+- Whether the model is still *right* needs true labels, which for churn arrive weeks later. So drift is the early warning and performance monitoring is the delayed confirmation.
+- Features are tested one by one; a change in how features combine is not seen.
+- Results on real data: see the Phase 7 report.

@@ -1,0 +1,9 @@
+# Drift detection settings (Phase 7, ADR-008). Used by scripts/check_drift.py and notebook 06.
+drift:
+  psi_threshold: 0.2        # PSI >= 0.2 is the usual "significant shift" rule of thumb
+  p_threshold: 0.05         # KS (numeric) / chi-square (categorical) p-value must also be below this
+  share_threshold: 0.3      # dataset verdict is "drift" when >= 30% of features have drifted
+  min_current_rows: 100     # fewer logged predictions than this -> "insufficient_data", never "drift"
+  # A feature counts as drifted only when BOTH PSI and the p-value agree. With thousands of
+  # rows a tiny shift is "significant" (small p) but harmless (small PSI); requiring both
+  # keeps the alarm from firing on noise.

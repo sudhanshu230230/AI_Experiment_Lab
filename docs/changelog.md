@@ -7,6 +7,19 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+
+## 2026-10-17: Phase 7 drift detection (code)
+
+- `monitoring/drift.py`: per-feature KS/chi-square + PSI, dataset verdict (`no_drift`, `drift`, `insufficient_data`), prediction drift reported separately. `monitoring/prediction_log.py` reads the API's JSONL log.
+- Fixed three bugs found by the tests: constant reference column gave PSI 0; an all-missing column crashed chi-square; text-typed `TotalCharges` was treated as categorical.
+- Added `configs/monitoring.yaml`, `scripts/check_drift.py` (`--fail-on-drift`), notebook 06, ADR-008 and the Phase 7 report; wrote the drift section of `docs/monitoring-and-drift.md`.
+- 34 drift tests.
+
+## 2026-10-16: Deployment target moved to Render
+
+- First deployment verified: https://churn-api-xop3.onrender.com passed all 6 smoke checks. The bare URL gave 404, so `/` now redirects to `/docs`.
+- Hugging Face Docker Spaces now require a paid plan, so the primary target is Render (free). Added `render.yaml`; `smoke_test_api.py` gained `--wait SECONDS` for cold starts; `docs/deployment.md` rewritten with the Render steps (Hugging Face kept as a paid alternative); ADR-006 amended; Phase 5 report updated.
+
 ## 2026-10-16: Phase 6 monitoring (code)
 
 - Added `serving/metrics.py` and `/metrics`: request count and latency by route template and status, prediction counts by class, probability histogram, model loaded/info gauges. One registry per app.
