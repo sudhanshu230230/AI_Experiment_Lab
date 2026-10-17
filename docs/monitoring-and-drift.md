@@ -86,4 +86,5 @@ Add `--fail-on-drift` to exit with code 1 on a `drift` verdict (used by the retr
 - Drift says the **inputs** changed. It does not say the model got worse: a shifted population can leave ranking quality (ROC AUC) intact while changing the churn rate, precision and recall.
 - Whether the model is still *right* needs true labels, which for churn arrive weeks later. So drift is the early warning and performance monitoring is the delayed confirmation.
 - Features are tested one by one; a change in how features combine is not seen.
+- Measured here: on a simulated shift toward month-to-month/fiber/short-tenure customers, F1 *rose* (0.619 to 0.681, because the churn rate went from 0.27 to 0.43) while ROC AUC *fell* (0.840 to 0.761). Watch ROC AUC, not F1 alone.
 - Results on real data: see the Phase 7 report. In short, at PSI 0.2 even a very large shift flagged only 3 of 19 features, which is why the threshold is 0.1.

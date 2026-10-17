@@ -1,8 +1,8 @@
 # Phase 7 Report: Data and Prediction Drift
 
 - **Dates:** 2026-10-17 to in progress
-- **Git tag:** v0.7-phase7 (after notebook 06 results are recorded)
-- **Status:** Nearly complete (notebook 06 run on real data; PSI threshold amended; one confirming re-run and the performance table pending)
+- **Git tag:** v0.7-phase7
+- **Status:** Complete
 
 ## Objective
 Detect when production inputs have moved away from the training data, with a verdict the retraining flow (Phase 8) can act on, and explain honestly what drift does and does not mean.
@@ -17,9 +17,9 @@ Detect when production inputs have moved away from the training data, with a ver
 | 4 | `configs/monitoring.yaml` thresholds | Done |
 | 5 | `scripts/check_drift.py`: training split vs logged inputs, JSON report, `--fail-on-drift` | Done; tested end to end |
 | 6 | Tests (`tests/test_drift.py`, 34) | Done |
-| 7 | Notebook 06 (scenarios, sensitivity table, performance check, Evidently HTML) | Run in Colab on real data; Evidently report saved |
-| 8 | Threshold amendment from the results (ADR-008) | Done; re-run of notebook 06 with PSI 0.1 pending |
-| 9 | Performance table (drift vs accuracy) | Output not yet received |
+| 7 | Notebook 06 (scenarios, sensitivity table, performance check, Evidently HTML) | Run in Colab on real data (twice: before and after the threshold change); Evidently report saved |
+| 8 | Threshold amendment from the results (ADR-008) | Done; confirmed by the re-run |
+| 9 | Performance table (drift vs accuracy) | Done |
 
 ## Bugs found while testing
 - A constant reference column made PSI 0 whatever the current values (both fell in one bin). Fixed.
@@ -44,7 +44,28 @@ Mean predicted probability rose from 0.42 (strength 0) to 0.61 (strength 100 and
 
 Evidently HTML report: `reports/drift/evidently_shifted.html` on Drive (3.9 MB; not committed).
 
-Pending: the sensitivity table re-run with PSI 0.1 (the notebook now prints both thresholds side by side) and the drift-versus-performance table.
+### After the change: re-run with PSI 0.1 (same data, same samples)
+
+| Strength | Drifted at PSI 0.1 | Verdict | Drifted at PSI 0.2 | Verdict at 0.2 | Mean score |
+|---|---|---|---|---|---|
+| 0 (bootstrap control) | 0 / 19 | no_drift | 0 | no_drift | 0.417 |
+| 1 | 2 / 19 | no_drift | 0 | no_drift | 0.528 |
+| 3 | 4 / 19 (21%) | no_drift | 2 | no_drift | 0.567 |
+| 10 | 9 / 19 (47%) | **drift** | 2 | no_drift | 0.603 |
+| 30 to 10,000 | 10 / 19 (53%) | drift | 3 | no_drift | 0.612 to 0.614 |
+
+The verdict flips between strength 3 and 10; the bootstrap control and the untouched test set stay at 0. At strength 10 the drifted features were tenure, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, Contract, MonthlyCharges and TotalCharges; prediction drift PSI was 0.716. At PSI 0.2 the same sample is `no_drift` at every strength, which is the miss that motivated the change. The insufficient-data guard works: 30 rows gave `insufficient_data`.
+
+Evidently on the strength-10 sample: 13 of 19 columns drifted (68%). Report: `reports/drift/evidently_shifted.html` on Drive (3.9 MB, not committed).
+
+### Drift versus performance (strength-10 sample, labels known because this is a simulation)
+
+| | F1 | ROC AUC | Precision | Recall | Churn rate |
+|---|---|---|---|---|---|
+| Test set | 0.619 | 0.840 | 0.512 | 0.783 | 0.265 |
+| Shifted sample | 0.681 | 0.761 | 0.561 | 0.869 | 0.426 |
+
+**The lesson: F1 went up while the model got worse.** The shifted population has a much higher churn rate (0.43 versus 0.27), which lifts precision, recall and F1 mechanically. ROC AUC, which does not depend on the churn rate, fell from 0.840 to 0.761: the model ranks customers less well on this population. A dashboard watching F1 would have said "better"; the drift verdict and ROC AUC both say "something changed and ranking quality dropped". Production monitoring of this model should track ROC AUC (or compare against the churn rate) rather than F1 alone, once labels arrive. This is one simulated shift; it shows the two can diverge, not how large the loss will be in general.
 
 ## Limitations
 See ADR-008 consequences: conventional thresholds, per-feature tests, labels arrive late, the free host's log is ephemeral.
