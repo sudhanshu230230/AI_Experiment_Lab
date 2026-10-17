@@ -21,6 +21,7 @@ from typing import Any
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 
 from ai_experiment_lab.registry.export import load_exported
 from ai_experiment_lab.serving.metrics import CONTENT_TYPE, Metrics
@@ -141,6 +142,11 @@ def create_app(model_dir: str | Path | None = None,
             path = getattr(route, "path", "unmatched")
             if path != "/metrics":
                 metrics.observe_request(request.method, path, status, time.perf_counter() - start)
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        """The bare URL opens the interactive API documentation."""
+        return RedirectResponse(url="docs")
 
     @app.get("/metrics", include_in_schema=False)
     def prometheus_metrics() -> Response:
