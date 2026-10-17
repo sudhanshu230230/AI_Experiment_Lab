@@ -1,0 +1,65 @@
+name: Redeploy
+
+# Manual: run it after committing a new models/champion/ (see docs/retraining.md).
+# Setup, once, in the GitHub repo: Settings > Secrets and variables > Actions
+#   secret   RENDER_DEPLOY_HOOK_URL   Render service > Settings > Deploy Hook (treat it like a password)
+#   variable RENDER_SERVICE_URL       e.g. https://churn-api-xop3.onrender.com
+on:
+  workflow_dispatch:
+
+concurrency: redeploy
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.export.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: pip install -e ".[dev,ml,tracking,serve]"
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest -q
+      - name: Check the committed model export
+        id: export
+        run: |
+          python scripts/check_model_export.py
+          echo "version=$(python scripts/check_model_export.py --print-version)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require configuration
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          URL: ${{ vars.RENDER_SERVICE_URL }}
+        run: |
+          [ -n "$HOOK" ] || { echo "::error::secret RENDER_DEPLOY_HOOK_URL is not set"; exit 1; }
+          [ -n "$URL" ] || { echo "::error::variable RENDER_SERVICE_URL is not set"; exit 1; }
+      - name: Trigger the Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error -X POST "$HOOK" > /dev/null && echo "deploy triggered"
+      - name: Wait for the new version and smoke-test it
+        env:
+          URL: ${{ vars.RENDER_SERVICE_URL }}
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          # The old container keeps answering until the new build is live, so poll /model
+          # until it reports the committed version (or give up after ~15 minutes).
+          for i in $(seq 1 90); do
+            served=$(curl -sf "$URL/model" | python3 -c "import sys,json; print(json.load(sys.stdin).get('registry_version',''))" 2>/dev/null || true)
+            echo "attempt $i: serving version '${served}' (want ${VERSION})"
+            [ "$served" = "$VERSION" ] && break
+            sleep 10
+          done
+          python3 scripts/smoke_test_api.py "$URL" --wait 120 --expect-version "$VERSION"

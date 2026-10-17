@@ -8,6 +8,11 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-17: Phase 8 retraining and redeploy (code)
+
+- Added `retraining/policy.py` (trigger on `drift`; promote only if ROC AUC improves >= 0.005 on shifted data and drops <= 0.01 on natural data), notebook 07, `scripts/check_model_export.py`, `smoke_test_api.py --expect-version`, and the manual `Redeploy` workflow (verify, Render deploy hook, wait for the committed version, smoke test).
+- ADR-009, `docs/retraining.md`, Phase 8 report (in progress). 8 new tests.
+
 ## 2026-10-17: Phase 7 drift detection (code)
 
 - `monitoring/drift.py`: per-feature KS/chi-square + PSI, dataset verdict (`no_drift`, `drift`, `insufficient_data`), prediction drift reported separately. `monitoring/prediction_log.py` reads the API's JSONL log.

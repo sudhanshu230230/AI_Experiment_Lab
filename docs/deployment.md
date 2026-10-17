@@ -51,7 +51,7 @@ python scripts\smoke_test_api.py https://YOUR_USER-churn-api.hf.space --wait 120
 It stages only what the image needs (Dockerfile, `pyproject.toml`, `src/`, `models/champion/`, a Space README with the required front matter) and uploads it with the token from the environment.
 
 ## Redeploying a new model
-Export the new champion (notebook 05), commit and push `models/champion/`, then trigger a Render manual deploy. Phase 8 and 9 automate this step.
+Retrain and export the new champion (notebook 07, or notebook 05 for a plain re-export), commit and push `models/champion/`, then run the manual **Redeploy** workflow on GitHub. It verifies the export, triggers Render and checks that the new `registry_version` is serving. See `docs/retraining.md`.
 
 ## Known limitations
 - Dependencies in the image are not fully pinned (only scikit-learn is); a lockfile is a later hardening step.

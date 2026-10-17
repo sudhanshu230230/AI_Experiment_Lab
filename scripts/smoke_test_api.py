@@ -1,6 +1,7 @@
 """Smoke test for a running prediction API (local, Docker, or deployed).
 
 Usage:  python scripts/smoke_test_api.py http://127.0.0.1:7860
+        python scripts/smoke_test_api.py URL --expect-version 4   # also check the served model version
         python scripts/smoke_test_api.py https://churn-api.onrender.com --wait 120
 
 --wait SECONDS keeps polling /health until the service answers (free hosts sleep when idle and
@@ -53,7 +54,7 @@ def wait_until_up(base: str, seconds: float) -> bool:
         time.sleep(5)
 
 
-def main(base: str, wait: float = 0) -> int:
+def main(base: str, wait: float = 0, expect_version: int | None = None) -> int:
     base = base.rstrip("/")
     if wait and not wait_until_up(base, wait):
         print(f"FAIL  service did not answer /health within {wait:.0f} s")
@@ -68,6 +69,9 @@ def main(base: str, wait: float = 0) -> int:
     check("GET /health is ok and model loaded", status == 200 and body == {"status": "ok", "model_loaded": True})
     status, body = call(base, "/model")
     check("GET /model returns registry metadata", status == 200 and "registry_version" in body)
+    if expect_version is not None:
+        served = body.get("registry_version") if status == 200 and body else None
+        check(f"served model is registry version {expect_version} (got {served})", served == expect_version)
     status, body = call(base, "/predict", EXAMPLE)
     check("POST /predict returns a probability in [0, 1]",
           status == 200 and 0 <= body["churn_probability"] <= 1)
@@ -90,5 +94,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Smoke test for the prediction API")
     ap.add_argument("url", nargs="?", default="http://127.0.0.1:7860")
     ap.add_argument("--wait", type=float, default=0, help="seconds to wait for the service to come up")
+    ap.add_argument("--expect-version", type=int, default=None,
+                    help="fail unless /model reports this registry_version")
     args = ap.parse_args()
-    sys.exit(main(args.url, args.wait))
+    sys.exit(main(args.url, args.wait, args.expect_version))
