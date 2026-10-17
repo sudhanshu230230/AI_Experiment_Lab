@@ -14,6 +14,7 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 - Fixed three bugs found by the tests: constant reference column gave PSI 0; an all-missing column crashed chi-square; text-typed `TotalCharges` was treated as categorical.
 - Added `configs/monitoring.yaml`, `scripts/check_drift.py` (`--fail-on-drift`), notebook 06, ADR-008 and the Phase 7 report; wrote the drift section of `docs/monitoring-and-drift.md`.
 - 34 drift tests.
+- Notebook 06 run on real data: the first PSI threshold (0.2) missed an extreme shift (3 of 19 features; Evidently found 13 of 19). Lowered to 0.1 in `configs/monitoring.yaml` and as the `detect_drift` default; recorded as an ADR-008 amendment. Phase 4 closed with the Colab registry results.
 
 ## 2026-10-16: Deployment target moved to Render
 

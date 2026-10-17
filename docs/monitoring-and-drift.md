@@ -60,7 +60,7 @@ They show the service is up, fast and answering, and give a coarse early signal 
 Decisions: ADR-008. Settings: `configs/monitoring.yaml`.
 
 ### What is compared
-Reference = the training split. Current = logged production inputs (the API writes them when `PREDICTION_LOG` is set; `docker compose` does this). Each feature gets a KS test (numeric) or chi-square test (categorical) and a PSI. A feature has **drifted** only if PSI >= 0.2 **and** p < 0.05. The dataset verdict is:
+Reference = the training split. Current = logged production inputs (the API writes them when `PREDICTION_LOG` is set; `docker compose` does this). Each feature gets a KS test (numeric) or chi-square test (categorical) and a PSI. A feature has **drifted** only if PSI >= 0.1 **and** p < 0.05 (lowered from the usual 0.2 after testing on real data; ADR-008). The dataset verdict is:
 
 | Verdict | Meaning |
 |---|---|
@@ -86,4 +86,4 @@ Add `--fail-on-drift` to exit with code 1 on a `drift` verdict (used by the retr
 - Drift says the **inputs** changed. It does not say the model got worse: a shifted population can leave ranking quality (ROC AUC) intact while changing the churn rate, precision and recall.
 - Whether the model is still *right* needs true labels, which for churn arrive weeks later. So drift is the early warning and performance monitoring is the delayed confirmation.
 - Features are tested one by one; a change in how features combine is not seen.
-- Results on real data: see the Phase 7 report.
+- Results on real data: see the Phase 7 report. In short, at PSI 0.2 even a very large shift flagged only 3 of 19 features, which is why the threshold is 0.1.

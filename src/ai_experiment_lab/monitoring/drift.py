@@ -175,7 +175,7 @@ def detect_drift(
     reference: pd.DataFrame,
     current: pd.DataFrame,
     columns: list[str] | None = None,
-    psi_threshold: float = 0.2,
+    psi_threshold: float = 0.1,
     p_threshold: float = 0.05,
     share_threshold: float = 0.3,
     min_current_rows: int = 100,
