@@ -5,13 +5,17 @@
 | Document | Purpose | Status |
 |---|---|---|
 | [00-project-charter.md](00-project-charter.md) | Goals, scope, non-goals, success criteria, roadmap | Complete |
-| [architecture.md](architecture.md) | System components, data flow, Colab / VS Code split | Complete (v0.1) |
-| [ml-lifecycle.md](ml-lifecycle.md) | Dataset to retraining, stage by stage | Complete (v0.1) |
+| [architecture.md](architecture.md) | System components, data flow, Colab / VS Code split | Complete (v1.0) |
+| [ml-lifecycle.md](ml-lifecycle.md) | Dataset to retraining, stage by stage | Complete (v1.0) |
 | [setup-guide.md](setup-guide.md) | VS Code, GitHub and Colab setup | Complete |
 | [deployment.md](deployment.md) | Docker, cloud deployment, environment variables | Implemented (Phase 5) |
-| [monitoring-and-drift.md](monitoring-and-drift.md) | Metrics, dashboards, drift policy | Not started (Phases 6-7) |
+| [monitoring-and-drift.md](monitoring-and-drift.md) | Metrics, dashboards, drift policy | Implemented (Phases 6-7) |
+| [retraining.md](retraining.md) | Retrain, promote, redeploy, rollback | Implemented (Phase 8) |
+| [definition-of-done.md](definition-of-done.md) | The 16 portfolio-ready criteria with evidence and gaps | Complete (Phase 9) |
+| [interview-prep.md](interview-prep.md) | Questions and project-grounded answers | Complete (Phase 9) |
+| [resume.md](resume.md) | Resume entry limited to what is implemented | Complete (Phase 9) |
 | [api-reference.md](api-reference.md) | Endpoints, schemas, example requests | Implemented (Phase 5) |
-| [testing-strategy.md](testing-strategy.md) | What is tested and how | Draft |
+| [testing-strategy.md](testing-strategy.md) | What is tested and how | Current (Phase 9) |
 | [changelog.md](changelog.md) | Dated log of changes | Active |
 
 ## Folders

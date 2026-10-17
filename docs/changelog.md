@@ -8,10 +8,16 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-17: Phase 9 CI/CD and wrap-up
+
+- `ci.yml`: Python 3.11 and 3.13 matrix, committed-export check, `permissions: contents: read`, cancel superseded runs.
+- README rewritten (was still Phase 0); architecture, ML lifecycle, testing strategy and docs index updated; added `definition-of-done.md` (16-point audit with gaps), `resume.md`, `interview-prep.md`, and the Phase 9 report.
+
 ## 2026-10-17: Phase 8 retraining and redeploy (code)
 
 - Added `retraining/policy.py` (trigger on `drift`; promote only if ROC AUC improves >= 0.005 on shifted data and drops <= 0.01 on natural data), notebook 07, `scripts/check_model_export.py`, `smoke_test_api.py --expect-version`, and the manual `Redeploy` workflow (verify, Render deploy hook, wait for the committed version, smoke test).
-- ADR-009, `docs/retraining.md`, Phase 8 report (in progress). 8 new tests.
+- ADR-009, `docs/retraining.md`, Phase 8 report. 8 new tests.
+- Notebook 07 on real data: the retrained candidate gained +0.0042 ROC AUC on shifted data (needed +0.005) and was unchanged on natural data, so the champion (version 3) was kept. The margin was not adjusted after the fact.
 
 ## 2026-10-17: Phase 7 drift detection (code)
 

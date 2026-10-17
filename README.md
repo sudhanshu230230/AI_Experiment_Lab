@@ -1,63 +1,98 @@
 # AI Experiment Lab
 
-An end-to-end ML experimentation and MLOps platform: dataset validation, preprocessing,
-multi-model experiments, hyperparameter optimization, experiment tracking, model registry,
-API deployment, monitoring, drift detection and retraining.
+An end-to-end ML experimentation and MLOps platform, built around one real problem (customer churn on the Telco dataset) so every lifecycle stage is exercised, tested and documented:
 
-> **Status:** Phase 0 complete (repo skeleton and documentation). See
-> [`docs/changelog.md`](docs/changelog.md) for progress. Features are only listed as done
-> once they are implemented and tested.
+`dataset -> validation -> preprocessing -> experiments -> Optuna tuning -> MLflow tracking and registry -> FastAPI -> Docker -> deploy -> Prometheus/Grafana -> drift detection -> retraining -> CI/CD`
 
-## How the work is split
+**Live API (free tier, sleeps when idle, first request takes about a minute):** https://churn-api-xop3.onrender.com/docs
 
-| Where | What |
-|---|---|
-| **VS Code (local)** | All source code, configs, tests, API, Docker, CI, docs |
-| **GitHub** | Single source of truth; bridge between VS Code and Colab |
-| **Google Colab** | All ML execution: profiling, training, Optuna, drift reports |
+> **Status:** Phases 0 to 9 complete. Every claim below is implemented and tested; limits are listed honestly in [What this is not](#what-this-is-not) and in [`docs/definition-of-done.md`](docs/definition-of-done.md).
 
-Colab notebooks are thin runners. They clone this repo, `pip install -e .`, and call the
-modules in `src/`. No real logic lives in notebooks.
+## Architecture
 
-## Quickstart (Colab)
-
-Open any notebook in `notebooks/`, then run the setup cell described in
-[`docs/setup-guide.md`](docs/setup-guide.md).
-
-## Quickstart (local, VS Code)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-pytest
+```text
+ Google Colab (all ML compute)                         Your machine / CI / cloud
+ ------------------------------                        ---------------------------------------
+ notebooks 01-07 (thin runners)                        FastAPI service  <-- models/champion/
+   profile, validate, split                              /predict /health /model /metrics
+   baselines -> MLflow runs (SQLite on Drive)            Docker image  --> Render (free)
+   Optuna: 40 trials x 3 models, nested runs             Prometheus + Grafana (docker compose)
+   registry: alias "champion", export (skops)            prediction log (JSONL) --> drift check
+   drift report (own module + Evidently HTML)            GitHub Actions: CI, manual Redeploy
+   retraining: candidate vs champion, promote?
+          \_____________ GitHub is the bridge: code, configs, docs, models/champion/ ____/
 ```
+
+Key design rules (each has an ADR in [`docs/decisions/`](docs/decisions/)):
+1. **Split first, fit preprocessing on the training split only.** Preprocessing and model are one sklearn `Pipeline`, so training and serving cannot diverge (ADR-002).
+2. **Never select on the test set or on accuracy.** Models are chosen by 5-fold CV F1; the test split is scored once (ADR-003, ADR-004).
+3. **Serve a skops file, not a pickle**, with a restricted list of trusted types (ADR-005).
+4. **Drift is a prompt to look, not proof of failure.** Retraining promotes a candidate only if it is clearly better (ADR-008, ADR-009).
+
+## Results on the Telco churn dataset (7,043 rows, 26.5% churn)
+
+| Stage | Result |
+|---|---|
+| Baselines (EXP-001) | Logistic Regression CV F1 0.628, XGBoost 0.612, Random Forest 0.540. Accuracy would have picked the worst churn detector |
+| Tuned, 40 Optuna trials each (EXP-003) | Test F1: Random Forest 0.637, XGBoost 0.632, Logistic Regression 0.620: a statistical tie (test noise about +-0.02) |
+| Champion (ADR-005) | Tuned Logistic Regression (`C=0.037`): test F1 0.620, recall 0.78, ROC AUC 0.840. Chosen for simplicity and speed because the models tie |
+| Drift (Phase 7) | Verdict flips to `drift` between shift strengths 3 and 10 of 19 features; untouched test data: 0 drifted. The first threshold (PSI 0.2) missed a clear shift and was lowered to 0.1 (ADR-008) |
+| Drift vs performance | On a shifted sample F1 rose (0.619 to 0.681) while ROC AUC fell (0.840 to 0.761) |
+| Retraining (Phase 8) | Candidate gained +0.004 ROC AUC on shifted data against a required +0.005: **rejected**, champion kept |
+
+## Run it
+
+**Tests (local, any OS; takes 1.5 to 3 minutes):**
+```bash
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e ".[dev,ml,tracking,serve]"
+ruff check . && pytest
+```
+
+**API in Docker (needs Docker Desktop and `models/champion/`):**
+```bash
+docker compose up --build        # API :7860, Prometheus :9090, Grafana :3000
+python scripts/smoke_test_api.py http://127.0.0.1:7860
+python scripts/load_generator.py --rate 5 --duration 120          # add --drift for shifted customers
+```
+
+**Check drift on logged traffic:**
+```bash
+python scripts/check_drift.py --data data/raw/Telco-Customer-Churn.csv --log data/predictions/predictions.jsonl
+```
+
+**ML work (Colab):** open a notebook from `notebooks/`, run the setup cell ([`docs/setup-guide.md`](docs/setup-guide.md)). Order: 01 explore, 02 baselines, 03 tracked baselines, 04 Optuna, 05 registry and export, 06 drift, 07 retraining.
+
+**Browse MLflow runs:** download the database backup from Drive (`mlflow/backups/`), then
+```bash
+pip install mlflow
+mlflow ui --backend-store-uri sqlite:///path/to/mlflow-backup.db
+```
+
+**Call the API:**
+```bash
+curl -X POST https://churn-api-xop3.onrender.com/predict -H "Content-Type: application/json" \
+  -d '{"gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":5,"PhoneService":"Yes","MultipleLines":"No","InternetService":"Fiber optic","OnlineSecurity":"No","OnlineBackup":"No","DeviceProtection":"No","TechSupport":"No","StreamingTV":"Yes","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":85.5,"TotalCharges":"420.35"}'
+```
+
+## CI/CD
+
+- [`ci.yml`](.github/workflows/ci.yml): on every push and pull request: ruff, pytest on two Python versions, then build the Docker image, run it and smoke-test it.
+- [`redeploy.yml`](.github/workflows/redeploy.yml): manual. Verifies the committed model export, triggers a Render deploy, waits until the deployed `registry_version` equals the committed one, then smoke-tests. Steps: [`docs/retraining.md`](docs/retraining.md).
 
 ## Documentation
 
-Start at [`docs/README.md`](docs/README.md). Key documents:
+Start at [`docs/README.md`](docs/README.md). Most useful:
+[architecture](docs/architecture.md) · [ML lifecycle](docs/ml-lifecycle.md) · [deployment](docs/deployment.md) · [monitoring and drift](docs/monitoring-and-drift.md) · [retraining](docs/retraining.md) · [API reference](docs/api-reference.md) · [definition of done](docs/definition-of-done.md) · [interview prep](docs/interview-prep.md) · [resume text](docs/resume.md) · [ADRs](docs/decisions/) · [phase reports](docs/phases/) · [experiment reports](docs/experiments/) · [changelog](docs/changelog.md)
 
-- [Project charter](docs/00-project-charter.md)
-- [Architecture](docs/architecture.md)
-- [ML lifecycle](docs/ml-lifecycle.md)
-- [Setup guide](docs/setup-guide.md)
-- [Architecture decisions (ADRs)](docs/decisions/)
-- [Phase reports](docs/phases/)
+## What this is not
 
-## Roadmap
-
-| Phase | Scope | Status |
-|---|---|---|
-| 0 | Repo skeleton, docs, Colab bootstrap | Done |
-| 1 | Ingestion, profiling, validation, preprocessing, baselines | Done |
-| 2 | MLflow experiment tracking | Planned |
-| 3 | Optuna hyperparameter optimization | Planned |
-| 4 | Model registry | Planned |
-| 5 | FastAPI, Docker, deployment | Planned |
-| 6 | Prometheus and Grafana monitoring | Planned |
-| 7 | Evidently drift detection | Planned |
-| 8 | Retraining with evaluation gates | Planned |
-| 9 | CI/CD with GitHub Actions | Planned (basic lint/test workflow exists) |
+- Tabular **classification** only; no regression, deep learning or NLP. Models: Logistic Regression, Random Forest, XGBoost.
+- No web UI or dashboard for running experiments; the workflow is notebooks plus the library in `src/`.
+- Prometheus and Grafana run locally (docker compose), not hosted. Evidently reports are produced in Colab; the in-repo drift module drives decisions.
+- Retraining is triggered by hand and runs in Colab. New labelled data is simulated from the test set, which that step consumes.
+- The hosted API has no authentication, and the free host sleeps and loses in-memory metrics and the prediction log on restart.
+- Single dataset, single 80/20 split: differences below about 0.02 F1 are noise.
 
 ## License
 

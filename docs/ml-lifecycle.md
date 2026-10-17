@@ -1,6 +1,6 @@
 # ML Lifecycle
 
-**Status:** v0.1 (describes the intended lifecycle; stage status is tracked in the roadmap)
+**Status:** v1.0. All 13 stages are implemented (Phases 1 to 8); the last column shows where.
 
 | # | Stage | What happens | Output | Phase |
 |---|---|---|---|---|
@@ -27,7 +27,6 @@
 - **Reproducibility:** every run records seed, dataset version, code version, dependency
   versions and parameters.
 
-## Example retraining gate (to be finalized in Phase 8)
+## Retraining gate (as implemented, ADR-009)
 
-A candidate is promoted only if its primary metric beats production, latency stays under
-the agreed threshold, and no important validation slice regresses materially.
+A candidate is promoted only if ROC AUC on shifted data improves by at least 0.005 and ROC AUC on natural data drops by no more than 0.01. Both are measured on data neither model trained on. The latency gate in the original plan was not implemented: the model is a logistic regression and latency is not a differentiator here.

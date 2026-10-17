@@ -1,17 +1,22 @@
 # Testing Strategy
 
-**Status:** Draft. Expanded as modules are implemented.
+**Status:** Current (Phase 9). 160 tests; `ruff check .` and `pytest` run in CI on every push.
 
-| Level | Scope | Tooling | When added |
-|---|---|---|---|
-| Smoke | Package imports, version present | pytest | Phase 0 (exists) |
-| Unit: data | Ingestion, profiling stats, each validation rule (pass and fail cases) | pytest, small synthetic frames | Phase 1 |
-| Unit: preprocessing | No leakage (fit on train only), identical output train vs inference, unseen categories | pytest | Phase 1 |
-| Unit: models and evaluation | Metric correctness on known inputs, seed reproducibility | pytest | Phase 1 |
-| Integration | Dataset to trained pipeline on a tiny fixture dataset | pytest | Phase 1-2 |
-| API | `/health`, `/predict` valid and invalid payloads, `/model-info` | pytest, FastAPI TestClient | Phase 5 |
-| Model quality gate | Candidate vs production metric thresholds | pytest or script in CI | Phase 8 |
-| Static | Lint | ruff | Phase 0 (exists) |
+| Level | What is tested | File |
+|---|---|---|
+| Smoke | Package imports, version | `test_smoke.py` |
+| Unit: data | Ingestion, profiling, each validation rule (pass and fail) | `test_data.py`, `test_validation.py` |
+| Unit: preprocessing | No leakage (fit on train only), same output at train and inference, unseen categories, `TotalCharges` text | `test_preprocessing.py` |
+| Unit: models, training, metrics | Metric correctness on known inputs, seed reproducibility, CV | `test_models_metrics.py`, `test_training.py` |
+| Tracking | Runs log params, metrics and model; logged model reproduces predictions; XGBoost round-trip | `test_tracking.py` |
+| Tuning | Search spaces, trial 0 equals the baseline, nested-run logging | `test_tuning.py` |
+| Registry and export | Alias moves with a new version, rollback, lineage tag, export round-trip without MLflow, tampered metadata refused | `test_registry.py` |
+| API | Valid and invalid payloads (422 for bad categories and numbers), `TotalCharges` handling, batch, health when the model fails to load, metrics, prediction log robustness | `test_serving.py` |
+| Drift | PSI and KS properties, constant and all-missing columns, text-typed numbers, verdict rules, insufficient data, script end to end | `test_drift.py` |
+| Retraining | Trigger rules, promotion gain and guard, F1 never promotes alone, candidate is an unfitted clone, export check | `test_retraining.py` |
+| System | Docker image build and `smoke_test_api.py` against the running container | CI job `docker` |
+| Post-deploy | Smoke test plus served-version check against the live service | `redeploy.yml` |
 
-**Rules:** tests use small synthetic fixtures, never the full dataset; ML-heavy tests that
-need Colab compute are marked and excluded from CI.
+**Rules:** tests use small synthetic fixtures, never the full dataset (the dataset is not committed). Heavy compute is not tested in CI: tuning and registry tests use 3 trials and tiny data. Notebooks are not unit-tested; they were dry-run end to end on synthetic data before being run on real data.
+
+**Not covered:** the Grafana dashboard rendering and the Prometheus alert firing (checked statically only: all PromQL expressions parse), the Evidently report, and the live Render service beyond the smoke test.

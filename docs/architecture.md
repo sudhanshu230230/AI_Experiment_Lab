@@ -1,74 +1,62 @@
 # Architecture
 
-**Status:** v0.1 (target architecture; components are marked with their implementation phase)
+**Status:** v1.0 (as implemented, Phases 0 to 9)
 
-## 1. Target system
+## 1. System
 
 ```text
-                       Streamlit dashboard (Phase 5+)
-                                  │
-                                  ▼
-                         FastAPI service (Phase 5)
-                                  │
-         ┌────────────────────────┼─────────────────────────┐
-         ▼                        ▼                         ▼
-  Dataset engine (P1)      Training engine (P1-3)      Model API (P5)
-  ingest, profile,         sklearn, XGBoost,           loads registered
-  validate, preprocess     Optuna                      model, predicts
-         │                        │                         │
-         │                        ▼                         ▼
-         │                 MLflow tracking (P2)      Monitoring (P6-7)
-         │                        │                  Prometheus, Grafana,
-         │                        ▼                  Evidently
-         │                 Model registry (P4)              │
-         │                        │                         ▼
-         └────────────────────────┴──────────────── Retraining (P8)
+ Google Colab (ML compute)                          Local / CI / cloud
+ ---------------------------                        --------------------------------------------
+ data/        ingest, profile, validate             serving/     FastAPI app, pydantic schemas, metrics
+ preprocessing/ one sklearn Pipeline                Docker image (models/champion baked in) -> Render
+ training/    baselines (CV F1)                     monitoring/  drift module, prediction-log reader
+ tuning/      Optuna (TPE, median pruner)           prometheus + grafana (docker compose, local)
+ tracking/    MLflow runs (SQLite on Drive)         GitHub Actions: ci.yml, redeploy.yml
+ registry/    alias "champion", skops export        scripts/     smoke test, load generator,
+ retraining/  trigger + promotion policy                         drift check, export check
+          \\______ GitHub: code, configs, docs, models/champion/ ______/
 ```
+
+Request path: `client -> /predict (pydantic validation) -> Pipeline.predict_proba -> JSON {probability, prediction, model_version}`; every request updates Prometheus metrics, and an optional JSONL log (`PREDICTION_LOG`) records inputs and scores for the drift check.
 
 ## 2. Components and code locations
 
-| Component | Package path | Phase |
+| Component | Path | Phase |
 |---|---|---|
 | Ingestion, profiling, validation | `src/ai_experiment_lab/data/` | 1 |
 | Preprocessing pipeline | `src/ai_experiment_lab/preprocessing/` | 1 |
-| Model definitions | `src/ai_experiment_lab/models/` | 1 |
-| Trainer, tuning | `src/ai_experiment_lab/training/` | 1, 3 |
-| Metrics, evaluation | `src/ai_experiment_lab/evaluation/` | 1 |
-| Runtime and drift monitoring | `src/ai_experiment_lab/monitoring/` | 6, 7 |
-| Shared utilities (config, logging, seeding) | `src/ai_experiment_lab/utils/` | 1 |
-| REST API | `api/` | 5 |
-| Dashboard | `dashboard/` | 5+ |
+| Model definitions, trainer | `src/ai_experiment_lab/models/`, `training/` | 1 |
+| Metrics | `src/ai_experiment_lab/evaluation/` | 1 |
+| MLflow tracking | `src/ai_experiment_lab/tracking/` | 2 |
+| Optuna tuning | `src/ai_experiment_lab/tuning/` | 3 |
+| Registry and serving export | `src/ai_experiment_lab/registry/` | 4 |
+| API, schemas, Prometheus metrics | `src/ai_experiment_lab/serving/` | 5, 6 |
+| Drift detection, prediction log | `src/ai_experiment_lab/monitoring/` | 7 |
+| Retraining policy | `src/ai_experiment_lab/retraining/` | 8 |
+| Dockerfile, compose, Render blueprint | repo root, `monitoring/` | 5, 6 |
+| CI and redeploy workflows | `.github/workflows/` | 0, 9 |
+
+The planned `api/` and `dashboard/` folders were not created: the API lives inside the package as `serving/` so Docker installs it with the library, and no dashboard was built (see README, "What this is not").
 
 ## 3. Where code is written and where it runs
 
-GitHub is the bridge between the two environments.
-
-```text
-VS Code (write, test lightweight code) ──push──▶ GitHub ──clone──▶ Colab (run ML)
-                                                   ▲                  │
-                                                   └── configs, docs ─┘
-```
-
 | Concern | Written in | Runs in |
 |---|---|---|
-| Library code under `src/` | VS Code | Colab (training); local (unit tests) |
+| Library code under `src/` | VS Code | Colab (training), local and CI (tests), Docker (serving) |
 | Notebooks | Colab | Colab |
-| MLflow runs and artifacts | n/a | Colab, stored per ADR-001 |
-| API, dashboard, Docker, CI, docs | VS Code | Local (API), CI (Docker build), cloud (deploy) |
-
-Notebooks are thin runners. They install the package and call modules in `src/`.
+| MLflow store and artifacts | n/a | Colab, SQLite and files on Drive (ADR-001) |
+| API, Docker, CI, docs | VS Code | Local, CI, Render |
 
 ## 4. Key design rules
 
-1. **One artifact for inference.** Preprocessing and model are saved as a single sklearn
-   `Pipeline` so training and serving cannot diverge (ADR-002).
-2. **No leakage.** Split first; fit all preprocessing on the training split only.
-3. **Config-driven.** Dataset, models, thresholds and metrics come from `configs/`.
-4. **Persistent state lives off Colab.** Data, MLflow store and artifacts are never kept
-   only on Colab's local disk (ADR-001).
-5. **Task-appropriate selection metric.** "Best" is never defined by accuracy alone (ADR-003).
+1. **One artifact for inference.** Preprocessing and model are a single `Pipeline` (ADR-002).
+2. **No leakage.** Split first; fit preprocessing on the training split only; select by CV, score the test split once.
+3. **Config-driven.** Dataset, models, search spaces and drift thresholds are in `configs/*.yaml`.
+4. **Persistent state lives off Colab** (ADR-001).
+5. **Task-appropriate selection metric**, never accuracy alone (ADR-003); ROC AUC for promotion because F1 moves with the churn rate (ADR-009).
+6. **No pickle in serving**: skops with a restricted trusted-type list (ADR-005).
+7. **Drift is a signal, not a verdict**; promotion needs an evaluation gate (ADR-008, ADR-009).
 
 ## 5. Decision log
 
-See [decisions/](decisions/). Current ADRs: 001 MLflow storage, 002 model handoff,
-003 initial dataset and selection metric.
+See [decisions/](decisions/): 001 MLflow storage, 002 model handoff, 003 dataset and selection metric, 004 tuning method, 005 champion and registry, 006 serving and deployment, 007 monitoring, 008 drift detection, 009 retraining and promotion.
