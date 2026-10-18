@@ -1,6 +1,6 @@
 # Testing Strategy
 
-**Status:** Current (Phase 9). 160 tests; `ruff check .` and `pytest` run in CI on every push.
+**Status:** Current (Phase 9). 163 tests; `ruff check .` and `pytest` run in CI on every push.
 
 | Level | What is tested | File |
 |---|---|---|
