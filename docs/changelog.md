@@ -8,6 +8,10 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-18: First real Redeploy run
+
+- Actions > Redeploy #1 on `63ac185` passed: verify 1m49s, deploy 41s, total 2m37s. Secret `RENDER_DEPLOY_HOOK_URL` and variable `RENDER_SERVICE_URL` configured. CI green (3.11, 3.13, Docker) on the web-page commit.
+
 ## 2026-10-18: Web page for end users
 
 - Added `/app` (`serving/ui.py`): plain HTML and JavaScript, no new dependency. One-customer form (dropdowns generated from the API schema, two example customers), CSV upload up to 1000 rows with a template download, a sortable results table and a results CSV download. Scores are shown as a "risk score" with an explicit note that they are not literal percentages (the model uses `class_weight=balanced`). Row-level error messages map API 422 responses to CSV rows. `/` now redirects to `/app`.

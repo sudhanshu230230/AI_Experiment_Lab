@@ -18,7 +18,7 @@
 | 12 | Generate/check a drift report | Met | `scripts/check_drift.py`; notebook 06 results in the Phase 7 report; Evidently HTML saved to Drive | The Evidently report is produced in Colab only (Python 3.14 locally cannot install a current Evidently) |
 | 13 | Understand how retraining happens | Met | `docs/retraining.md`, ADR-009; notebook 07 run on real data (candidate rejected by the rule) | Manual trigger; new data simulated from the test set; promote path run only on synthetic data |
 | 14 | Inspect automated tests | Met | 160 tests; `docs/testing-strategy.md` | Notebooks are not unit-tested |
-| 15 | See CI/CD configuration | Met | `.github/workflows/ci.yml` (lint, tests on two Python versions, Docker build and smoke test) and `redeploy.yml` (manual) | The redeploy workflow needs the Render secret to be set up before its first run |
+| 15 | See CI/CD configuration | Met | `.github/workflows/ci.yml` (lint, tests on two Python versions, Docker build and smoke test) and `redeploy.yml` (manual) | Redeploy ran for real on 2026-10-18 (run #1, commit `63ac185`): verify 1m49s, deploy 41s, both green |
 | 16 | Understand the whole ML lifecycle | Met | `docs/ml-lifecycle.md` maps 13 stages to code, ADRs and reports | none |
 
 ## Items in the original vision that were deliberately not built
