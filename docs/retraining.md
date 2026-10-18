@@ -24,7 +24,7 @@ git add models/champion
 git commit -m "Promote champion version N after drift retrain"
 git push
 ```
-`check_model_export.py` fails if the model does not load, if the metadata is incomplete, or if the model was trained with a different scikit-learn than the Dockerfile installs (then change `ARG SKLEARN_VERSION` in the Dockerfile to match).
+`check_model_export.py` fails if the metadata is incomplete, or if the model was trained with a different scikit-learn than the Dockerfile installs (then change `ARG SKLEARN_VERSION` in the Dockerfile to match). It loads the model only when the installed scikit-learn equals the training version; otherwise it prints `SKIP load check`, because a model saved by one scikit-learn version often cannot be loaded by another. The real load test is the Docker smoke test, which runs the pinned version.
 
 ## 3. Redeploy (GitHub Actions, manual)
 One-time setup in the GitHub repository, **Settings > Secrets and variables > Actions**:

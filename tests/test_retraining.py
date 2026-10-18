@@ -121,6 +121,13 @@ def test_check_model_export_script(tmp_path):
     docker.write_text("FROM python\nARG SKLEARN_VERSION=1.6.1\n")
     assert check.main([str(out), "--dockerfile", str(docker)]) == 0
     assert check.main([str(out), "--print-version"]) == 0
+    # the load check is skipped, not failed, when scikit-learn differs from the training version
+    assert check.load_problems(out, "0.0.1") == []
+    import sklearn
+    assert check.load_problems(out, sklearn.__version__) == []                 # same version: really loads
+    (out / "model.skops").write_bytes(b"not a model")
+    assert check.load_problems(out, sklearn.__version__) != []                 # corrupt model is caught
+    export_pipeline(pipe, out, meta)                                           # restore a good export
     docker.write_text("FROM python\nARG SKLEARN_VERSION=1.5.0\n")
     assert check.main([str(out), "--dockerfile", str(docker)]) == 1            # version mismatch
     assert check.main([str(tmp_path / "nothing"), "--dockerfile", str(docker)]) == 1

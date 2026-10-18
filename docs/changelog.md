@@ -8,6 +8,10 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-18: CI fix
+
+- CI run #30 and #31 failed on the new model-export check: it loaded the model (trained with scikit-learn 1.6.1) under the newest scikit-learn in the CI environment, which cannot read it. The check now skips the load step when the installed version differs from the training version (the Docker smoke test, which pins 1.6.1, is the authoritative load test). Test added for both paths. Found by reproducing the CI steps on the pushed commit: ruff and all 160 tests passed on Python 3.11 and 3.13.
+
 ## 2026-10-17: Phase 9 CI/CD and wrap-up
 
 - `ci.yml`: Python 3.11 and 3.13 matrix, committed-export check, `permissions: contents: read`, cancel superseded runs.
