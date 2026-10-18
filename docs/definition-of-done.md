@@ -13,7 +13,7 @@
 | 7 | Compare models | Met | EXP-001 (baselines), EXP-003 (tuned): tables of CV and test metrics | none |
 | 8 | Tune a model | Met | Notebook 04, ADR-004; 40 Optuna trials per model, nested MLflow runs | Search spaces not widened beyond edges noted in EXP-003 |
 | 9 | Register a model | Met | Notebook 05: `telco-churn-classifier`, alias `champion`, lineage tag, reproduction check | Registry versions 1 to 3 are the same model (notebook was re-run) |
-| 10 | Call the prediction API | Met | Live: https://churn-api-xop3.onrender.com/docs; smoke test 6 of 6 | Free host sleeps (about a minute to wake); no authentication |
+| 10 | Call the prediction API | Met | Live: https://churn-api-xop3.onrender.com/ (web page) and `/docs`; smoke test 6 of 6 | Free host sleeps (about a minute to wake); no authentication |
 | 11 | View monitoring metrics | Met locally | `/metrics`; `docker compose up` gives Prometheus and a 12-panel Grafana dashboard; 5 alert rules | Not hosted; dashboard and alerts were validated statically (PromQL parses) and run by the author locally, but no screenshots are committed |
 | 12 | Generate/check a drift report | Met | `scripts/check_drift.py`; notebook 06 results in the Phase 7 report; Evidently HTML saved to Drive | The Evidently report is produced in Colab only (Python 3.14 locally cannot install a current Evidently) |
 | 13 | Understand how retraining happens | Met | `docs/retraining.md`, ADR-009; notebook 07 run on real data (candidate rejected by the rule) | Manual trigger; new data simulated from the test set; promote path run only on synthetic data |

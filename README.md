@@ -4,7 +4,9 @@ An end-to-end ML experimentation and MLOps platform, built around one real probl
 
 `dataset -> validation -> preprocessing -> experiments -> Optuna tuning -> MLflow tracking and registry -> FastAPI -> Docker -> deploy -> Prometheus/Grafana -> drift detection -> retraining -> CI/CD`
 
-**Live API (free tier, sleeps when idle, first request takes about a minute):** https://churn-api-xop3.onrender.com/docs
+**Live demo (free tier, sleeps when idle, first request takes about a minute):** https://churn-api-xop3.onrender.com/ (web page for people) and `/docs` (API).
+
+**For end users:** open the live demo, fill in a customer or upload a CSV of customers, and get a churn risk score and a downloadable results file. No install, no code. Locally: `docker run -p 7860:7860 ...` then open http://localhost:7860/.
 
 > **Status:** Phases 0 to 9 complete. Every claim below is implemented and tested; limits are listed honestly in [What this is not](#what-this-is-not) and in [`docs/definition-of-done.md`](docs/definition-of-done.md).
 
@@ -88,7 +90,7 @@ Start at [`docs/README.md`](docs/README.md). Most useful:
 ## What this is not
 
 - Tabular **classification** only; no regression, deep learning or NLP. Models: Logistic Regression, Random Forest, XGBoost.
-- No web UI or dashboard for running experiments; the workflow is notebooks plus the library in `src/`.
+- The web page at `/app` only scores customers. There is no UI for running experiments; that workflow is notebooks plus the library in `src/`. No login, so do not put real customer data on the public demo.
 - Prometheus and Grafana run locally (docker compose), not hosted. Evidently reports are produced in Colab; the in-repo drift module drives decisions.
 - Retraining is triggered by hand and runs in Colab. New labelled data is simulated from the test set, which that step consumes.
 - The hosted API has no authentication, and the free host sleeps and loses in-memory metrics and the prediction log on restart.

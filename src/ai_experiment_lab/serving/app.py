@@ -21,7 +21,7 @@ from typing import Any
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ai_experiment_lab.registry.export import load_exported
 from ai_experiment_lab.serving.metrics import CONTENT_TYPE, Metrics
@@ -32,6 +32,7 @@ from ai_experiment_lab.serving.schemas import (
     Health,
     Prediction,
 )
+from ai_experiment_lab.serving.ui import render_index
 
 log = logging.getLogger("ai_experiment_lab.serving")
 DEFAULT_MODEL_DIR = "models/champion"
@@ -143,10 +144,17 @@ def create_app(model_dir: str | Path | None = None,
             if path != "/metrics":
                 metrics.observe_request(request.method, path, status, time.perf_counter() - start)
 
+    page = render_index()
+
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
-        """The bare URL opens the interactive API documentation."""
-        return RedirectResponse(url="docs")
+        """The bare URL opens the web page for people; the API documentation is at /docs."""
+        return RedirectResponse(url="app")
+
+    @app.get("/app", include_in_schema=False)
+    def web_app() -> HTMLResponse:
+        """Form for one customer and CSV upload for many (plain HTML, see serving/ui.py)."""
+        return HTMLResponse(page)
 
     @app.get("/metrics", include_in_schema=False)
     def prometheus_metrics() -> Response:

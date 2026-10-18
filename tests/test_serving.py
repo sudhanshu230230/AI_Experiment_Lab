@@ -228,7 +228,25 @@ def test_unwritable_prediction_log_does_not_break_predictions(model_dir, tmp_pat
         assert c.post("/predict", json=EXAMPLE).status_code == 200
 
 
-def test_root_redirects_to_interactive_docs(client):
+def test_root_redirects_to_the_web_page(client):
     r = client.get("/", follow_redirects=False)
-    assert r.status_code in (302, 307) and r.headers["location"].endswith("docs")
+    assert r.status_code in (302, 307) and r.headers["location"].endswith("app")
     assert client.get("/", follow_redirects=True).status_code == 200
+
+
+def test_web_page_is_served_and_covers_every_schema_field(client):
+    r = client.get("/app")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    for field in CustomerFeatures.model_fields:
+        assert f'id="f-{field}"' in r.text
+    assert client.get("/docs").status_code == 200  # API docs still reachable
+
+
+def test_web_page_options_come_from_the_schema(client):
+    page = client.get("/app").text
+    for value in ("Fiber optic", "No internet service", "Bank transfer (automatic)"):
+        assert value in page
+
+
+def test_web_page_is_not_in_the_api_schema(client):
+    assert "/app" not in client.get("/openapi.json").json()["paths"]

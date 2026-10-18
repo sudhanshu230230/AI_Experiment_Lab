@@ -8,6 +8,12 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-18: Web page for end users
+
+- Added `/app` (`serving/ui.py`): plain HTML and JavaScript, no new dependency. One-customer form (dropdowns generated from the API schema, two example customers), CSV upload up to 1000 rows with a template download, a sortable results table and a results CSV download. Scores are shown as a "risk score" with an explicit note that they are not literal percentages (the model uses `class_weight=balanced`). Row-level error messages map API 422 responses to CSV rows. `/` now redirects to `/app`.
+- Tested in headless Chromium against a running server: single and batch scoring, blank TotalCharges, bad CSV, a rejected category, mobile width, dark theme. Unit tests added in `tests/test_serving.py`.
+- Limitations: no login, so no real customer data on the public demo; the demo model is trained on a public dataset.
+
 ## 2026-10-18: CI fix
 
 - CI run #30 and #31 failed on the new model-export check: it loaded the model (trained with scikit-learn 1.6.1) under the newest scikit-learn in the CI environment, which cannot read it. The check now skips the load step when the installed version differs from the training version (the Docker smoke test, which pins 1.6.1, is the authoritative load test). Test added for both paths. Found by reproducing the CI steps on the pushed commit: ruff and all 160 tests passed on Python 3.11 and 3.13.

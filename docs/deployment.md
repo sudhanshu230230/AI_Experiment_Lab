@@ -21,7 +21,7 @@ python scripts/smoke_test_api.py http://127.0.0.1:7860
 If Docker Desktop is too heavy for the laptop, skip this: CI builds and smoke-tests the image on every push once `models/champion/model.skops` is committed (`.github/workflows/ci.yml`, job `docker`).
 
 ## Deploy to Render (primary target, free)
-**Live service:** https://churn-api-xop3.onrender.com. The bare URL redirects to `/docs`. The smoke test passed 6 of 6 checks against it on 2026-10-16 (first deployment). Steps to reproduce it:
+**Live service:** https://churn-api-xop3.onrender.com. The bare URL redirects to `/app` (the web page); the API docs are at `/docs`. The smoke test passed 6 of 6 checks against it on 2026-10-16 (first deployment). Steps to reproduce it:
 
 Render builds the Dockerfile straight from the GitHub repository, so `models/champion/` must be committed and pushed first. `render.yaml` at the repo root describes the service (Docker runtime, free plan, health check `/health`, `PORT=10000`, manual deploys).
 
