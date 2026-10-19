@@ -13,7 +13,7 @@ Constraints: keep the Telco demo and its 163 tests working unchanged; keep the C
 1. **Edit the Telco code for each new dataset.** Simple, but not reusable and easy to get wrong.
 2. **A config file per dataset (columns, types, allowed values) that the serving code reads.** Reusable, but a second source of truth that can disagree with the trained model.
 3. **Store the schema inside the model export and build the API and page from it.** One source of truth, produced at training time from the same data the model saw.
-4. **Train inside the web app on uploaded files.** Most convenient, but unsuited to the free tier (memory, time, no persistent disk) and widens the attack surface.
+4. **Train inside the web app on uploaded files.** Most convenient, but unsuited to the free tier (memory, time, no persistent disk) and widens the attack surface. *Later revisited in ADR-011 as a heavily capped advisor.*
 
 ## Decision
 Option 3. `automl.train_dataset` infers the task (binary, multi-class or regression), cleans the columns and writes `metadata.json` with the task, target, classes and a per-column schema (type, nullable, range, allowed values, a synthetic typical example). The API reads only that metadata at start-up: it builds the pydantic request model dynamically (column names are aliases, so "Usage Frequency" works), chooses the response shape for the task, and renders the web form from the same description. An export without a schema (the Telco champion) falls back to the original hand-written models, so nothing about the live demo changes.

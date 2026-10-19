@@ -28,6 +28,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from ai_experiment_lab.registry.export import load_exported
 from ai_experiment_lab.serving.contract import Contract, GenericPrediction, load_contract
+from ai_experiment_lab.serving.lab import register_lab
 from ai_experiment_lab.serving.metrics import CONTENT_TYPE, Metrics
 from ai_experiment_lab.serving.schemas import (
     BatchResponse,
@@ -268,6 +269,9 @@ def create_app(model_dir: str | Path | None = None,
                       response_model=batch_response,
                       response_model_exclude_none=not contract.legacy,
                       summary="Predict for up to 1000 rows")
+
+    if register_lab(app) is not None:
+        app.state.lab_enabled = True
 
     return app
 
