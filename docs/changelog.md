@@ -8,6 +8,15 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-19: Any tabular dataset (ADR-010)
+
+- New `automl` package: infers the task (binary, multi-class, regression) and the column schema from a CSV, trains and compares models by cross-validation, optional Optuna tuning, optional MLflow logging and registry, and exports `model.skops` plus `metadata.json` with the schema. Entry points: `scripts/train_any.py` and `notebooks/08_any_dataset.ipynb`.
+- The API reads the schema from the model's metadata: request validation, response shape, `/schema` and the web page (form, CSV template, results table and download) follow the model. Column names may contain spaces. Exports without a schema (the Telco champion) use the old hand-written path unchanged.
+- Fixed: a JSON body with `NaN` or `Infinity` caused a 500 instead of a 422 (the error response echoed the value and could not be serialised). The 422 body now lists locations and messages only.
+- Fixed: the page's embedded data now escapes `<`, `>` and `&`, so a column name cannot break out of the script block.
+- Drift: `check_drift.py --model-dir` works for any model. Retraining: `score(..., task=)` and `promotion_metric(task)` (ROC AUC, balanced accuracy, R^2). Smoke test reads `/schema`. Dockerfile has `ARG XGBOOST_VERSION`; `check_model_export.py` checks it.
+- 188 tests (25 new). Tested end to end on an uploaded 64,374-row churn CSV, the wine and diabetes data, in a real browser. The uploaded churn file looks rule-generated (a depth-5 tree scores 96%), so its near-perfect scores are not evidence of a good model.
+
 ## 2026-10-18: First real Redeploy run
 
 - Actions > Redeploy #1 on `63ac185` passed: verify 1m49s, deploy 41s, total 2m37s. Secret `RENDER_DEPLOY_HOOK_URL` and variable `RENDER_SERVICE_URL` configured. CI green (3.11, 3.13, Docker) on the web-page commit.

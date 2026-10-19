@@ -47,9 +47,15 @@ class Metrics:
         self.latency.labels(method, path).observe(seconds)
 
     def observe_predictions(self, preds) -> None:
-        for p in preds:
-            self.predictions.labels(p.prediction).inc()
-            self.probability.observe(p.churn_probability)
+        """``preds`` is an iterable of ``(predicted_label, probability_or_None)``.
+
+        The label set is bounded (two classes, at most 50 classes, or the constant "value" for
+        regression). The probability histogram only gets binary probabilities.
+        """
+        for label, probability in preds:
+            self.predictions.labels(str(label)).inc()
+            if probability is not None:
+                self.probability.observe(probability)
 
     def set_model(self, meta: dict | None) -> None:
         self.model_info.clear()

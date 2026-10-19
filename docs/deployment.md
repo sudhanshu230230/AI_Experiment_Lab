@@ -50,6 +50,9 @@ python scripts\smoke_test_api.py https://YOUR_USER-churn-api.hf.space --wait 120
 ```
 It stages only what the image needs (Dockerfile, `pyproject.toml`, `src/`, `models/champion/`, a Space README with the required front matter) and uploads it with the token from the environment.
 
+## Deploying a model trained on another dataset
+See [any-dataset.md](any-dataset.md). The image is the same; only `models/champion/` and the library-version `ARG` lines at the top of the Dockerfile change (`SKLEARN_VERSION`, and `XGBOOST_VERSION` when an XGBoost model won). `scripts/check_model_export.py` (also run by CI) fails if they do not match the model.
+
 ## Redeploying a new model
 Retrain and export the new champion (notebook 07, or notebook 05 for a plain re-export), commit and push `models/champion/`, then run the manual **Redeploy** workflow on GitHub. It verifies the export, triggers Render and checks that the new `registry_version` is serving. See `docs/retraining.md`.
 

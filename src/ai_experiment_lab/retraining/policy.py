@@ -92,9 +92,17 @@ def retrain_candidate(champion, X_train: pd.DataFrame, y_train, X_new: pd.DataFr
     return candidate.fit(X, y)
 
 
-def score(pipeline, X: pd.DataFrame, y) -> dict[str, float]:
-    """Metrics of a fitted pipeline on (X, y) at the default 0.5 threshold."""
-    return classification_metrics(y, pipeline.predict(X), pipeline.predict_proba(X)[:, 1])
+def score(pipeline, X: pd.DataFrame, y, task: str = "binary") -> dict[str, float]:
+    """Metrics of a fitted pipeline on (X, y). Binary uses the default 0.5 threshold.
+
+    For other tasks pass ``task`` ("multiclass" or "regression") and compare with
+    ``promotion_metric(task)`` (balanced accuracy or R^2, both higher-is-better).
+    """
+    if task == "binary":
+        return classification_metrics(y, pipeline.predict(X), pipeline.predict_proba(X)[:, 1])
+    from ai_experiment_lab.automl import evaluate
+
+    return evaluate(task, pipeline, X, y)
 
 
 def shifted_sample(X: pd.DataFrame, strength: float, n: int = 1000, seed: int = 0) -> pd.DataFrame:
