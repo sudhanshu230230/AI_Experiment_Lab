@@ -6,6 +6,9 @@ FROM python:3.12-slim
 # Use the scikit-learn version the model was trained with (see models/champion/metadata.json,
 # "libraries"). Override with: --build-arg SKLEARN_VERSION=x.y.z
 ARG SKLEARN_VERSION=1.6.1
+# Only needed when the model contains an XGBoost model (metadata.json lists "xgboost" under
+# "libraries" and scripts/check_model_export.py says so). Empty = not installed.
+ARG XGBOOST_VERSION=
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -19,7 +22,8 @@ WORKDIR /app
 # Dependencies first (cached unless pyproject.toml or the source changes).
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install ".[serve]" "scikit-learn==${SKLEARN_VERSION}"
+RUN pip install ".[serve]" "scikit-learn==${SKLEARN_VERSION}" \
+    && if [ -n "${XGBOOST_VERSION}" ]; then pip install "xgboost==${XGBOOST_VERSION}"; fi
 
 # The model is copied last: a new model does not reinstall the dependencies.
 COPY models/champion ./models/champion

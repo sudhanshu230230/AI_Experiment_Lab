@@ -41,3 +41,7 @@ Promote only if ROC AUC on shifted data improves by at least 0.005 and ROC AUC o
 
 ## Limits
 Retraining is manual and runs in Colab. New labelled data is simulated from the test set (which this consumes). Evaluation sets are small, so small differences are noise and "keep the champion" is a common, safe outcome.
+
+## Other tasks (ADR-010)
+`score(pipeline, X, y, task=...)` and `promotion_metric(task)` give the metric the promotion rule compares: ROC AUC for binary, balanced accuracy for multi-class, R^2 for regression (all higher-is-better, so the same 0.005 gain and 0.01 guard apply). Notebook 07 and `shifted_sample` are written for the Telco data; for another dataset build the shifted and natural evaluation sets yourself and call `retrain_candidate` and `decide_promotion` the same way.
+

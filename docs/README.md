@@ -10,6 +10,7 @@
 | [setup-guide.md](setup-guide.md) | VS Code, GitHub and Colab setup | Complete |
 | [deployment.md](deployment.md) | Docker, cloud deployment, environment variables | Implemented (Phase 5) |
 | [monitoring-and-drift.md](monitoring-and-drift.md) | Metrics, dashboards, drift policy | Implemented (Phases 6-7) |
+| [any-dataset.md](any-dataset.md) | Train on your own CSV (binary, multi-class, regression) and deploy it | Implemented (ADR-010) |
 | [retraining.md](retraining.md) | Retrain, promote, redeploy, rollback | Implemented (Phase 8) |
 | [definition-of-done.md](definition-of-done.md) | The 16 portfolio-ready criteria with evidence and gaps | Complete (Phase 9) |
 | [interview-prep.md](interview-prep.md) | Questions and project-grounded answers | Complete (Phase 9) |

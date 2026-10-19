@@ -88,3 +88,7 @@ Add `--fail-on-drift` to exit with code 1 on a `drift` verdict (used by the retr
 - Features are tested one by one; a change in how features combine is not seen.
 - Measured here: on a simulated shift toward month-to-month/fiber/short-tenure customers, F1 *rose* (0.619 to 0.681, because the churn rate went from 0.27 to 0.43) while ROC AUC *fell* (0.840 to 0.761). Watch ROC AUC, not F1 alone.
 - Results on real data: see the Phase 7 report. In short, at PSI 0.2 even a very large shift flagged only 3 of 19 features, which is why the threshold is 0.1.
+
+## Models trained on other datasets (ADR-010)
+Drift detection works on any columns (numeric and categorical are told apart from the data). `python scripts/check_drift.py --data my.csv --model-dir models/champion --log <log>` takes the feature list from the model's schema. The prediction log records a `score` per row (probability of the positive class, top-class probability, or the predicted number). The Grafana dashboard keeps its Telco metric names; its probability panels only fill for binary models.
+

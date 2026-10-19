@@ -26,9 +26,14 @@ import sys
 from pathlib import Path
 
 
-def dockerfile_sklearn(dockerfile: Path) -> str | None:
-    m = re.search(r"^ARG SKLEARN_VERSION=(\S+)", dockerfile.read_text(), re.MULTILINE)
+def dockerfile_arg(dockerfile: Path, name: str) -> str | None:
+    """Default value of ``ARG <name>=...`` in the Dockerfile (None if absent or empty)."""
+    m = re.search(rf"^ARG {name}=(\S+)", dockerfile.read_text(), re.MULTILINE)
     return m.group(1) if m else None
+
+
+def dockerfile_sklearn(dockerfile: Path) -> str | None:
+    return dockerfile_arg(dockerfile, "SKLEARN_VERSION")
 
 
 def check(model_dir: Path, dockerfile: Path) -> list[str]:
@@ -46,8 +51,25 @@ def check(model_dir: Path, dockerfile: Path) -> list[str]:
     if trained and image and trained != image:
         problems.append(f"model trained with scikit-learn {trained} but the Dockerfile installs {image}; "
                         f"change ARG SKLEARN_VERSION in the Dockerfile to {trained}")
+    problems += xgboost_problems(meta, dockerfile)
     problems += load_problems(model_dir, trained)
     return problems
+
+
+def xgboost_problems(meta: dict, dockerfile: Path) -> list[str]:
+    """A model that contains XGBoost needs the same XGBoost in the image (it is not installed by default)."""
+    uses = any(t.startswith("xgboost.") for t in meta.get("skops_trusted_types", []))
+    if not uses or not dockerfile.exists():
+        return []
+    trained = (meta.get("libraries") or {}).get("xgboost")
+    image = dockerfile_arg(dockerfile, "XGBOOST_VERSION")
+    if not image:
+        return [("the model contains an XGBoost model but the Dockerfile does not install it; "
+                 f"set ARG XGBOOST_VERSION={trained or '<version>'} in the Dockerfile")]
+    if trained and image != trained:
+        return [(f"model trained with xgboost {trained} but the Dockerfile installs {image}; "
+                 f"change ARG XGBOOST_VERSION to {trained}")]
+    return []
 
 
 def load_problems(model_dir: Path, trained: str | None) -> list[str]:
