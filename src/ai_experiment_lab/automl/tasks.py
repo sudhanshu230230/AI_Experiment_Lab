@@ -71,6 +71,47 @@ DEFAULT_PARAMS: dict[str, dict[str, dict[str, Any]]] = {
 
 RIDGE_SPACE = {"alpha": {"type": "float", "low": 0.001, "high": 1000.0, "log": True}}
 
+# Optuna search spaces. Kept in code (not read from configs/tuning.yaml) so the serving image,
+# which ships no configs folder, can tune too; tests/test_automl.py keeps them equal to the YAML.
+SPACES: dict[str, dict[str, dict[str, Any]]] = {
+    "logistic_regression": {
+        "C": {"type": "float", "low": 0.001, "high": 100.0, "log": True},
+        "solver": {"type": "categorical", "choices": ["lbfgs", "liblinear"]},
+    },
+    "random_forest": {
+        "n_estimators": {"type": "int", "low": 100, "high": 600},
+        "max_depth": {"type": "int", "low": 3, "high": 20},
+        "min_samples_leaf": {"type": "int", "low": 1, "high": 30},
+        "max_features": {"type": "categorical", "choices": ["sqrt", "log2", 0.5]},
+    },
+    "xgboost": {
+        "n_estimators": {"type": "int", "low": 100, "high": 600},
+        "learning_rate": {"type": "float", "low": 0.01, "high": 0.3, "log": True},
+        "max_depth": {"type": "int", "low": 2, "high": 8},
+        "min_child_weight": {"type": "float", "low": 1.0, "high": 20.0, "log": True},
+        "subsample": {"type": "float", "low": 0.6, "high": 1.0},
+        "colsample_bytree": {"type": "float", "low": 0.5, "high": 1.0},
+        "reg_lambda": {"type": "float", "low": 0.01, "high": 20.0, "log": True},
+    },
+    "ridge": RIDGE_SPACE,
+}
+
+
+def suggest_params(trial, space: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Sample one value per entry of a search space."""
+    out: dict[str, Any] = {}
+    for name, spec in space.items():
+        kind = spec["type"]
+        if kind == "float":
+            out[name] = trial.suggest_float(name, spec["low"], spec["high"], log=bool(spec.get("log")))
+        elif kind == "int":
+            out[name] = trial.suggest_int(name, spec["low"], spec["high"], log=bool(spec.get("log")))
+        elif kind == "categorical":
+            out[name] = trial.suggest_categorical(name, list(spec["choices"]))
+        else:
+            raise ValueError(f"unknown search-space type '{kind}' for '{name}'")
+    return out
+
 
 def build_estimator(task: str, name: str, params: dict[str, Any] | None, seed: int,
                     y_train=None) -> BaseEstimator:

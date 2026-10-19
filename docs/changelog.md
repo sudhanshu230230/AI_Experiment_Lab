@@ -8,6 +8,11 @@ Dated log of project changes, newest first. Entries describe what exists, not wh
 
 
 
+## 2026-10-19: Model advisor (ADR-011)
+
+- Added `/lab`: upload a CSV, pick the column to predict, get the recommended algorithm, its settings, honest test scores against a guessing baseline, warnings, column importance, a code snippet and a downloadable model. Capped (rows, columns, time, one run at a time); uploads stay in memory.
+- Added `automl/advisor.py`, `serving/lab.py`, `tests/test_advisor.py`; the Docker image installs the `lab` extra (optuna). Total: 210 tests.
+
 ## 2026-10-19: Any tabular dataset (ADR-010)
 
 - New `automl` package: infers the task (binary, multi-class, regression) and the column schema from a CSV, trains and compares models by cross-validation, optional Optuna tuning, optional MLflow logging and registry, and exports `model.skops` plus `metadata.json` with the schema. Entry points: `scripts/train_any.py` and `notebooks/08_any_dataset.ipynb`.

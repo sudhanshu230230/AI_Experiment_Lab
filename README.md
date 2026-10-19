@@ -43,6 +43,10 @@ Key design rules (each has an ADR in [`docs/decisions/`](docs/decisions/)):
 | Drift vs performance | On a shifted sample F1 rose (0.619 to 0.681) while ROC AUC fell (0.840 to 0.761) |
 | Retraining (Phase 8) | Candidate gained +0.004 ROC AUC on shifted data against a required +0.005: **rejected**, champion kept |
 
+## Try it on your own data
+
+Open `/lab` on the live site, upload any tabular CSV (not time series, images, audio or video), and it tells you which algorithm to use and with which settings. See [docs/model-advisor.md](docs/model-advisor.md).
+
 ## Run it
 
 **Tests (local, any OS; takes 1.5 to 3 minutes):**

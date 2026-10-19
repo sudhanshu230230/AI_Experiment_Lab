@@ -322,6 +322,7 @@ a { color:var(--accent); }
   <h1>__TITLE__</h1>
   <p class="sub">__INTRO__ <span id="status" class="status" role="status">Checking service&hellip;</span></p>
   <div class="notice">__NOTICE__</div>
+  <p class="small" id="lab-link" hidden>Have your own table of data? <a href="lab">Upload a CSV and get an algorithm recommendation &rarr;</a></p>
 </header>
 <main>
   <nav role="tablist" aria-label="Mode">
@@ -400,6 +401,8 @@ function convert(f, raw) {
   if (v === "") return f.required ? "" : null;
   return v;
 }
+
+fetch("lab/limits").then(r => { if (r.ok) $("lab-link").hidden = false; }).catch(() => {});
 
 // ---- service status -----------------------------------------------------------------------
 async function checkStatus() {

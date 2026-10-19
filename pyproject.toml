@@ -23,6 +23,8 @@ dependencies = [
 ml = ["xgboost", "lightgbm", "matplotlib"]
 # Phase 2-4
 tracking = ["mlflow>=3.0", "skops", "optuna"]
+# Model advisor on the server (ADR-011): tuning
+lab = ["optuna"]
 # Phase 5+: serving
 serve = ["fastapi", "uvicorn[standard]", "pydantic", "skops", "prometheus-client"]
 # Phase 6-7

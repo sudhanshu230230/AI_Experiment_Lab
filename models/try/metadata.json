@@ -1,0 +1,225 @@
+{
+  "registered_name": "customer-churn-dataset-testing-master",
+  "registry_version": 1,
+  "alias": "champion",
+  "model_name": "xgboost",
+  "task": "binary",
+  "target": "Churn",
+  "title": "Churn predictor",
+  "classes": [
+    "0",
+    "1"
+  ],
+  "positive_label": "1",
+  "negative_label": "0",
+  "threshold": 0.5,
+  "selection_metric": "f1",
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_precision": 1.0,
+    "test_recall": 1.0,
+    "test_f1": 1.0,
+    "test_roc_auc": 0.9999999999999999,
+    "test_pr_auc": 1.0
+  },
+  "n_rows": 64374,
+  "split": {
+    "train_rows": 51499,
+    "test_rows": 12875,
+    "cv_folds": 5,
+    "seed": 42,
+    "test_size": 0.2
+  },
+  "hyperparameters": {
+    "n_estimators": 300,
+    "learning_rate": 0.1,
+    "max_depth": 6
+  },
+  "dataset_name": "customer_churn_dataset-testing-master",
+  "dataset_sha256": "330af932f2dc1cae917f3bd0fb29395c4021319dd906189b7dc257d0ad58a617",
+  "schema": {
+    "task": "binary",
+    "target": "Churn",
+    "classes": [
+      "0",
+      "1"
+    ],
+    "positive_label": "1",
+    "negative_label": "0",
+    "excluded": [
+      "CustomerID"
+    ],
+    "features": [
+      {
+        "name": "Age",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 18.0,
+        "max": 65.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 42
+      },
+      {
+        "name": "Gender",
+        "kind": "categorical",
+        "nullable": false,
+        "integer": false,
+        "numeric_text": false,
+        "min": null,
+        "max": null,
+        "allowed": [
+          "Female",
+          "Male"
+        ],
+        "choices": null,
+        "typical": "Female"
+      },
+      {
+        "name": "Tenure",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 1.0,
+        "max": 60.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 33
+      },
+      {
+        "name": "Usage Frequency",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 1.0,
+        "max": 30.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 15
+      },
+      {
+        "name": "Support Calls",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 0.0,
+        "max": 10.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 6
+      },
+      {
+        "name": "Payment Delay",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 0.0,
+        "max": 30.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 19
+      },
+      {
+        "name": "Subscription Type",
+        "kind": "categorical",
+        "nullable": false,
+        "integer": false,
+        "numeric_text": false,
+        "min": null,
+        "max": null,
+        "allowed": [
+          "Basic",
+          "Premium",
+          "Standard"
+        ],
+        "choices": null,
+        "typical": "Standard"
+      },
+      {
+        "name": "Contract Length",
+        "kind": "categorical",
+        "nullable": false,
+        "integer": false,
+        "numeric_text": false,
+        "min": null,
+        "max": null,
+        "allowed": [
+          "Annual",
+          "Monthly",
+          "Quarterly"
+        ],
+        "choices": null,
+        "typical": "Monthly"
+      },
+      {
+        "name": "Total Spend",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 100.0,
+        "max": 1000.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 534
+      },
+      {
+        "name": "Last Interaction",
+        "kind": "numeric",
+        "nullable": false,
+        "integer": true,
+        "numeric_text": false,
+        "min": 1.0,
+        "max": 30.0,
+        "allowed": null,
+        "choices": null,
+        "typical": 15
+      }
+    ]
+  },
+  "example": {
+    "Age": 42,
+    "Gender": "Female",
+    "Tenure": 33,
+    "Usage Frequency": 15,
+    "Support Calls": 6,
+    "Payment Delay": 19,
+    "Subscription Type": "Standard",
+    "Contract Length": "Monthly",
+    "Total Spend": 534,
+    "Last Interaction": 15
+  },
+  "libraries": {
+    "scikit-learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "xgboost": "3.4.1",
+    "optuna": "5.0.0",
+    "skops": "0.16.0"
+  },
+  "created_at": "2026-10-19T03:49:28+00:00",
+  "input_columns": [
+    "Age",
+    "Gender",
+    "Tenure",
+    "Usage Frequency",
+    "Support Calls",
+    "Payment Delay",
+    "Subscription Type",
+    "Contract Length",
+    "Total Spend",
+    "Last Interaction"
+  ],
+  "skops_trusted_types": [
+    "ai_experiment_lab.preprocessing.pipeline.NumericCoercer",
+    "numpy.dtype",
+    "xgboost.core.Booster",
+    "xgboost.sklearn.XGBClassifier"
+  ]
+}

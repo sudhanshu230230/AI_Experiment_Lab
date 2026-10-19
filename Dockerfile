@@ -22,7 +22,7 @@ WORKDIR /app
 # Dependencies first (cached unless pyproject.toml or the source changes).
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install ".[serve]" "scikit-learn==${SKLEARN_VERSION}" \
+RUN pip install ".[serve,lab]" "scikit-learn==${SKLEARN_VERSION}" \
     && if [ -n "${XGBOOST_VERSION}" ]; then pip install "xgboost==${XGBOOST_VERSION}"; fi
 
 # The model is copied last: a new model does not reinstall the dependencies.

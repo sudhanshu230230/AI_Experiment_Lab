@@ -30,12 +30,13 @@ from ai_experiment_lab.automl.tasks import (
     CV_SCORING,
     DEFAULT_PARAMS,
     MODELS,
-    RIDGE_SPACE,
     SELECTION,
+    SPACES,
     build_estimator,
     cv_splitter,
     evaluate,
     max_folds,
+    suggest_params,
 )
 from ai_experiment_lab.preprocessing import build_preprocessing_pipeline
 from ai_experiment_lab.registry.export import export_pipeline
@@ -57,6 +58,9 @@ class TrainResult:
     params: dict[str, dict[str, Any]] = field(default_factory=dict)
     seconds: float = 0.0
     split: dict[str, Any] = field(default_factory=dict)
+    X_test: pd.DataFrame | None = None  # kept so callers can compare against a baseline
+    y_test: Any = None
+    y_train: Any = None
 
     @property
     def pipeline(self) -> Pipeline:
@@ -84,15 +88,8 @@ def _tune(task: str, name: str, X, y, coerce, base_params, folds, seed, trials, 
     """Optuna search of one model on the training split. Returns ``(best_params, best_cv)``."""
     import optuna
 
-    from ai_experiment_lab.tuning.tuner import suggest_params
-    from ai_experiment_lab.utils.config import load_config
-
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    if name == "ridge":
-        space = dict(RIDGE_SPACE)
-    else:
-        cfg = Path(__file__).resolve().parents[3] / "configs" / "tuning.yaml"
-        space = dict(load_config(cfg)["tuning"]["spaces"][name])
+    space = {k: dict(v) for k, v in SPACES[name].items()}
     if name == "logistic_regression" and task == "multiclass":
         space.pop("solver", None)       # liblinear cannot fit more than two classes
     metric, _ = SELECTION[task]
@@ -220,6 +217,7 @@ def train_dataset(
         seconds=time.perf_counter() - start,
         split={"train_rows": len(X_train), "test_rows": len(X_test), "cv_folds": folds,
                "seed": seed, "test_size": test_size},
+        X_test=X_test, y_test=y_test, y_train=y_train,
     )
 
 
