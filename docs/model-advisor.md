@@ -1,6 +1,6 @@
 # Model advisor
 
-Open `/lab` on the live site (or locally at http://127.0.0.1:8000/lab).
+The live site opens on this page (`/lab`), locally http://127.0.0.1:8000/. The churn demo moved to `/app`.
 
 1. Choose a CSV (up to 15 MB, comma, semicolon or tab separated, with a header row).
 2. Pick the column to predict and tick columns to ignore (IDs, names). Likely IDs are ticked for you.

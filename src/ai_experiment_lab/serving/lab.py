@@ -223,6 +223,16 @@ def register_lab(app: FastAPI) -> LabState | None:
         prof = column_profile(df)
         return JSONResponse({"upload_id": upload_id, **prof})
 
+    @app.get("/lab/uploads/{upload_id}")
+    def upload_profile(upload_id: str) -> dict[str, Any]:
+        """The profile of a file already uploaded (used when another page hands a file over)."""
+        with state.lock:
+            state.sweep()
+            entry = state.uploads.get(upload_id)
+        if entry is None:
+            raise HTTPException(404, "That upload has expired. Upload the file again.")
+        return {"upload_id": upload_id, **column_profile(entry[0])}
+
     @app.post("/lab/run", status_code=202)
     def run(req: RunRequest) -> dict[str, Any]:
         with state.lock:
@@ -262,67 +272,94 @@ def register_lab(app: FastAPI) -> LabState | None:
 def render_lab(lim: Limits) -> str:
     cfg = json.dumps({"maxMb": lim.max_upload / 1024 / 1024, "rows": lim.max_rows,
                       "seconds": lim.budget}).replace("<", "\\u003c")
-    return _PAGE.replace("__CONFIG__", cfg)
+    from ai_experiment_lab.serving import theme
+    return (_PAGE.replace("__THEME_CSS__", theme.CSS).replace("__FONTS__", theme.FONTS)
+            .replace("__TOPBAR__", theme.topbar("advisor")).replace("__CONFIG__", cfg))
 
 
 _PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Model advisor</title>
+__FONTS__
 <style>
-:root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --muted:#5d6b7c; --line:#dfe4ea; --accent:#1f5fbf; --ok:#17794a; --warn:#9a6700; --warnbg:#fff7e0; --bar:#8fb3e8; }
-@media (prefers-color-scheme: dark) { :root { --bg:#12161c; --card:#1b212a; --ink:#e7ecf2; --muted:#9aa8b8; --line:#2c3541; --accent:#6ea3ff; --ok:#4cc38a; --warn:#e3b341; --warnbg:#2a2412; --bar:#33598f; } }
-* { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-header, main { max-width:900px; margin:0 auto; padding:0 16px; } header { padding-top:28px; }
-h1 { font-size:1.6rem; margin:0 0 4px; } h2 { font-size:1.15rem; margin:0 0 10px; }
-.sub, .small { color:var(--muted); } .small { font-size:.88rem; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin:16px 0; }
-label { display:block; font-weight:600; margin:10px 0 4px; }
-select, input[type=file] { width:100%; max-width:460px; padding:9px; font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
-button { font:inherit; font-weight:600; padding:10px 18px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
-button.alt { background:transparent; color:var(--accent); } button:disabled { opacity:.5; cursor:default; }
-.ids { display:flex; flex-wrap:wrap; gap:6px 16px; margin:4px 0; } .ids label { font-weight:400; margin:0; display:flex; gap:6px; }
-.error { color:#b42318; white-space:pre-line; margin-top:10px; } .note { background:var(--warnbg); border:1px solid var(--warn); border-radius:8px; padding:10px 12px; margin:8px 0; }
-.big { font-size:1.7rem; font-weight:700; } .pill { display:inline-block; border:1px solid var(--ok); color:var(--ok); border-radius:999px; padding:1px 10px; font-size:.85rem; font-weight:600; margin-left:8px; vertical-align:middle; }
-table { border-collapse:collapse; width:100%; font-size:.92rem; } th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; } td.n { text-align:right; font-variant-numeric:tabular-nums; }
-.scroll { overflow-x:auto; } .bar { height:10px; background:var(--bar); border-radius:5px; } .barcell { width:40%; }
-pre { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px; overflow-x:auto; font-size:.85rem; }
-ul { padding-left:20px; margin:6px 0; } [hidden] { display:none !important; }
-progress { width:100%; max-width:460px; } footer { max-width:900px; margin:0 auto; padding:0 16px 32px; color:var(--muted); font-size:.85rem; }
-a { color:var(--accent); }
+__THEME_CSS__
+.card { background:var(--glass); border:1px solid var(--line); border-radius:18px; padding:clamp(16px,3vw,28px); margin-bottom:20px; }
+.card > h2 { font-size:1.3rem; margin-bottom:14px; display:flex; align-items:center; gap:12px; }
+.card > h2 .n { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--reagent); color:var(--reagent-ink); font:700 .95rem var(--text); flex:none; }
+.drop { position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:28px; padding:clamp(32px,6vw,56px) 16px; text-align:center; border:2px dashed rgba(232,245,242,.35); border-radius:20px; background:rgba(255,255,255,.06); color:var(--deep-ink); transition:border-color .15s, background .15s; cursor:pointer; }
+.drop:hover, .drop.over { border-color:#8fe3bd; background:rgba(143,227,189,.12); }
+.drop strong { font:800 clamp(1.4rem,3.5vw,2rem) var(--display); letter-spacing:-.015em; }
+.drop span { color:var(--deep-muted); }
+.trio { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px 28px; }
+.trio strong { display:block; font:700 1.05rem var(--display); margin-bottom:4px; } .trio span { color:var(--muted); font-size:.94rem; }
+#s-intro > h2 { font-size:1.3rem; margin-bottom:16px; }
+.drop input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; padding:0; }
+.drop:focus-within { outline:3px solid var(--focus); outline-offset:2px; }
+.ids { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 4px; }
+.ids label { flex-direction:row; align-items:center; gap:8px; font-weight:400; padding:6px 14px; border:1.5px solid var(--line); border-radius:999px; background:var(--sunk); cursor:pointer; transition:background .12s,border-color .12s; }
+.ids label:has(input:checked) { background:color-mix(in srgb, var(--reagent) 14%, var(--glass)); border-color:var(--reagent); }
+.ids input { accent-color:var(--reagent); }
+.field { margin:16px 0 6px; font-weight:600; font-size:.92rem; }
+#target { max-width:460px; }
+.progress { height:8px; border-radius:4px; background:var(--sunk); overflow:hidden; border:1px solid var(--line); }
+.progress i { display:block; height:100%; width:35%; border-radius:4px; background:linear-gradient(90deg,#2fbf84,#f0a21c,#ee3d7c); animation:slide 1.4s ease-in-out infinite alternate; }
+@keyframes slide { from { margin-left:0; } to { margin-left:65%; } }
+.winner { background:var(--deep); color:var(--deep-ink); border:0; }
+.winner .small { color:var(--deep-muted); }
+.winner .big { font:800 clamp(2.2rem,6vw,3.6rem)/1.05 var(--display); letter-spacing:-.025em; margin:6px 0 4px; display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; }
+.winner .pill { font:600 .85rem var(--text); letter-spacing:0; padding:4px 14px; border-radius:999px; background:rgba(255,255,255,.14); }
+.winner ul { margin:14px 0 0; padding-left:20px; max-width:70ch; } .winner li { margin:5px 0; }
+.race { display:grid; gap:10px; }
+.race .r { display:grid; grid-template-columns:minmax(120px,210px) 1fr 120px; gap:14px; align-items:center; font-size:.93rem; }
+.race .name { font-weight:600; } .race .name small { display:block; color:var(--muted); font-weight:400; }
+.race .track { height:14px; border-radius:7px; background:var(--sunk); border:1px solid var(--line); overflow:hidden; }
+.race .track i { display:block; height:100%; border-radius:7px; background:color-mix(in srgb, var(--reagent) 45%, var(--sunk)); }
+.race .r.best .track i { background:var(--reagent); } .race .r.best .name::after { content:" · best"; font-weight:500; color:var(--reagent); }
+.race .v { text-align:right; font-variant-numeric:tabular-nums; }
+.bar { height:10px; background:var(--reagent); border-radius:5px; } .barcell { width:40%; }
+pre { background:var(--deep); color:var(--deep-ink); border-radius:12px; padding:16px; overflow-x:auto; font:.85rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
+ul { padding-left:20px; margin:6px 0; }
+.big { font-size:1.7rem; font-weight:700; }
+footer { max-width:1040px; margin:0 auto; padding:0 20px 40px; color:var(--muted); font-size:.85rem; }
+@media (max-width:640px) { .race .r { grid-template-columns:1fr 90px; } .race .track { grid-column:1 / -1; order:3; } }
 </style></head><body>
-<header>
-  <h1>Model advisor</h1>
-  <p class="sub">Upload a table of data (CSV). Pick the column you want to predict. The server tries several algorithms, tunes them, and tells you which to use and with what settings.</p>
-  <p class="small"><a href="app">&larr; Back to the churn predictor</a></p>
-</header>
-<main>
-  <section class="card" id="s-upload">
-    <h2>1. Your data</h2>
-    <label for="file">CSV file</label>
-    <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv">
-    <p class="small" id="limits"></p>
-    <p class="small">Works for tables where each row stands alone: predicting a category (yes/no or several classes) or a number. It does not handle time series (forecasting over time), images, audio or video.</p>
-    <div class="error" id="e-upload" role="alert"></div>
+__TOPBAR__
+<div class="hero"><div class="in">
+  <h1>Check your CSV. Find the right model.</h1>
+  <p>Drop in any table of data. The advisor tries several algorithms on it, tunes them, and tells you which one to use and with what settings.</p>
+  <label class="drop" id="drop"><strong id="drop-title">Drop your CSV here</strong><span id="drop-sub">or click to choose a file</span>
+    <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" aria-label="CSV file"></label>
+  <p class="hint2" id="limits"></p>
+  <p class="hint2" style="margin-top:6px">Works for tables where each row stands alone: predicting a category (yes/no or several classes) or a number. It does not handle time series (forecasting over time), images, audio or video.</p>
+  <div class="error" id="e-upload" role="alert" style="color:#ffb3c9"></div>
+</div></div>
+<main class="wrap">
+  <section class="card" id="s-intro">
+    <h2>What you get back</h2>
+    <div class="trio">
+      <div><strong>The algorithm and its settings</strong><span>One recommendation, with the reason and every setting explained.</span></div>
+      <div><strong>An honest score</strong><span>Measured on rows the model never saw, next to what plain guessing would score.</span></div>
+      <div><strong>A model you can use</strong><span>Download it as a zip and serve it with this project, or copy the code.</span></div>
+    </div>
   </section>
 
   <section class="card" id="s-setup" hidden>
-    <h2>2. What should it predict?</h2>
-    <p class="small" id="summary"></p>
-    <label for="target">Column to predict</label>
+    <h2><span class="n">1</span>What should it predict?</h2>
+    <p class="small" id="summary" style="margin-top:0"></p>
+    <label for="target" class="field">Column to predict</label>
     <select id="target"></select>
-    <label>Columns to ignore (IDs, names, anything that is not a real input)</label>
+    <div class="field">Columns to ignore (IDs, names, anything that is not a real input)</div>
     <div class="ids" id="ids"></div>
     <div class="note" id="p-warn" hidden></div>
-    <p><button id="go">Find the best algorithm</button></p>
+    <p style="margin-bottom:0"><button class="primary" id="go">Find the best algorithm</button></p>
     <div class="error" id="e-run" role="alert"></div>
   </section>
 
   <section class="card" id="s-progress" hidden>
-    <h2>Working&hellip;</h2>
-    <progress id="prog"></progress>
-    <p class="small" id="msg">Starting</p>
-    <p class="small">This usually takes one to a few minutes on a small server. You can leave this tab open.</p>
+    <h2><span class="n">2</span>Trying algorithms&hellip;</h2>
+    <div class="progress" id="prog" role="progressbar" aria-label="Working"><i></i></div>
+    <p id="msg" style="margin:14px 0 4px;font-weight:500">Starting</p>
+    <p class="small" style="margin:0">This usually takes one to a few minutes on a small server. You can leave this tab open.</p>
   </section>
 
   <section id="s-result" hidden></section>
@@ -348,8 +385,13 @@ async function api(path, opts) {
   return body;
 }
 
+for (const ev of ["dragenter", "dragover"]) $("drop").addEventListener(ev, () => $("drop").classList.add("over"));
+for (const ev of ["dragleave", "drop"]) $("drop").addEventListener(ev, () => $("drop").classList.remove("over"));
 $("file").addEventListener("change", async ev => {
   const f = ev.target.files[0];
+  $("drop-title").textContent = f ? f.name : "Drop your CSV here";
+  $("drop-sub").textContent = f ? (f.size < 1048576 ? Math.round(f.size / 1024) + " KB" : (f.size / 1048576).toFixed(1) + " MB") + ", click to choose another" : "or click to choose a file";
+  $("s-intro").hidden = !!f;
   $("e-upload").textContent = ""; $("s-setup").hidden = true; $("s-result").hidden = true; upload = null;
   if (!f) return;
   if (f.size > CFG.maxMb * 1024 * 1024) { $("e-upload").textContent = `That file is ${(f.size/1048576).toFixed(1)} MB; the limit is ${CFG.maxMb} MB.`; return; }
@@ -359,7 +401,17 @@ $("file").addEventListener("change", async ev => {
   } catch (e) { $("e-upload").textContent = e.message; }
 });
 
+(async () => {
+  // Handed over from the churn page: #upload=<id>&name=<file name>
+  const h = new URLSearchParams(location.hash.slice(1)); const id = h.get("upload");
+  if (!id) return;
+  history.replaceState(null, "", location.pathname);
+  try { upload = await api("lab/uploads/" + encodeURIComponent(id)); fillSetup(upload, h.get("name") || "Your file"); }
+  catch (e) { $("e-upload").textContent = e.message; }
+})();
+
 function fillSetup(p, name) {
+  $("s-intro").hidden = true; $("drop-title").textContent = name;
   $("summary").textContent = `${name}: ${p.rows.toLocaleString()} rows, ${p.columns.length} columns.`;
   const t = $("target"); t.replaceChildren();
   for (const c of p.columns) t.append(el("option", {value: c.name, text: `${c.name}  (${c.unique} distinct${c.missing ? ", " + c.missing + " missing" : ""})`}));
@@ -418,6 +470,7 @@ function showResult(job, id) {
   const a = job.result, root = $("s-result"); root.replaceChildren();
   const big = el("div", {class: "big"}, prettyName(a.recommended), el("span", {class: "pill", text: a.task === "binary" ? "yes / no" : a.task === "multiclass" ? "several categories" : "a number"}));
   const head = card(null, el("div", {class: "small", text: "Recommended algorithm"}), big);
+  head.classList.add("winner");
   const ul = el("ul"); a.why.forEach(w => ul.append(el("li", {text: w}))); head.append(ul);
   root.append(head);
 
@@ -435,7 +488,18 @@ function showResult(job, id) {
   root.append(sc);
 
   const lb = card("Every candidate tried");
-  lb.append(table(["Algorithm", "Cross-validated score", "Score on unseen rows", "Fit time (s)"], a.leaderboard.map(r => [r.model, `${fmt(r.cv)} ± ${fmt(r.cv_std)}`, fmt(r.test), String(r.fit_seconds)]), [1, 2, 3]));
+  const lower = a.selection_metric === "rmse";
+  const vals = a.leaderboard.map(r => r.cv), top = Math.max(...vals), low = Math.min(...vals);
+  const race = el("div", {class: "race"});
+  a.leaderboard.forEach((r, i) => {
+    const w = lower ? (low > 0 ? low / r.cv : 1) : (top > 0 ? Math.max(0.03, r.cv / top) : 0);
+    const bar = el("i"); bar.style.width = Math.max(3, Math.min(100, w * 100)) + "%";
+    const track = el("div", {class: "track"}, bar);
+    race.append(el("div", {class: "r" + (i === 0 ? " best" : "")},
+      el("div", {class: "name"}, prettyName(r.model.replace(" (tuned)", "")) + (r.model.includes("(tuned)") ? " (tuned)" : ""), el("small", {text: `unseen rows ${fmt(r.test)}, fit ${r.fit_seconds} s`})),
+      track, el("div", {class: "v", text: `${fmt(r.cv)} ± ${fmt(r.cv_std)}`})));
+  });
+  lb.append(race);
   lb.append(el("p", {class: "small", text: "Cross-validation uses only the training rows. A \"(tuned)\" row is the algorithm after a search for better settings; a tuned score is the best of several tries and can be a little optimistic, which is why the unseen-rows column is shown."}));
   root.append(lb);
 
@@ -449,9 +513,9 @@ function showResult(job, id) {
   const cc = card("Use it yourself");
   cc.append(el("pre", {text: a.code}));
   const row = el("p");
-  const cp = el("button", {class: "alt", text: "Copy code"}); cp.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(a.code).then(() => { cp.textContent = "Copied"; }));
+  const cp = el("button", {class: "secondary", text: "Copy code"}); cp.addEventListener("click", () => navigator.clipboard && navigator.clipboard.writeText(a.code).then(() => { cp.textContent = "Copied"; }));
   row.append(cp);
-  if (job.has_model) { row.append(" "); const dl = el("a", {href: "lab/jobs/" + id + "/model", download: "model.zip"}); dl.append(el("button", {text: "Download the trained model"})); row.append(dl); }
+  if (job.has_model) { row.append(" "); const dl = el("a", {href: "lab/jobs/" + id + "/model", download: "model.zip"}); dl.append(el("button", {class: "primary", text: "Download the trained model"})); row.append(dl); }
   cc.append(row);
   cc.append(el("p", {class: "small", text: `Data used: ${a.data.used_rows.toLocaleString()} of ${a.data.rows.toLocaleString()} rows, ${a.data.features} input columns. Took ${a.seconds} s.`}));
   if (a.notes.length) { const n = el("ul"); a.notes.forEach(x => n.append(el("li", {class: "small", text: x}))); cc.append(n); }

@@ -230,7 +230,7 @@ def test_unwritable_prediction_log_does_not_break_predictions(model_dir, tmp_pat
 
 def test_root_redirects_to_the_web_page(client):
     r = client.get("/", follow_redirects=False)
-    assert r.status_code in (302, 307) and r.headers["location"].endswith("app")
+    assert r.status_code in (302, 307) and r.headers["location"].endswith(("lab", "app"))
     assert client.get("/", follow_redirects=True).status_code == 200
 
 

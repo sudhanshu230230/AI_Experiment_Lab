@@ -15,6 +15,7 @@ import json
 from typing import Any
 
 from ai_experiment_lab.automl.schema import Feature, element_ids
+from ai_experiment_lab.serving import theme
 from ai_experiment_lab.serving.contract import MAX_BATCH, Contract
 from ai_experiment_lab.serving.schemas import CustomerFeatures
 
@@ -246,7 +247,9 @@ def render_index(spec: dict[str, Any] | None = None) -> str:
         spec = ui_spec(Contract(True, "binary", list(CustomerFeatures.model_fields),
                                 CustomerFeatures, CustomerFeatures))
     title = html.escape(spec["title"])
-    page = (_PAGE.replace("__FORM__", _form_html(spec))
+    page = (_PAGE.replace("__THEME_CSS__", theme.CSS).replace("__FONTS__", theme.FONTS)
+                 .replace("__TOPBAR__", theme.topbar("predict"))
+                 .replace("__FORM__", _form_html(spec))
                  .replace("__TITLE__", title)
                  .replace("__INTRO__", html.escape(spec["intro"]))
                  .replace("__NOTICE__", spec["notice"])
@@ -262,76 +265,63 @@ _PAGE = r"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
+__FONTS__
 <style>
-:root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --muted:#5b6572; --line:#d9dee5; --accent:#1f5eff;
-        --low:#1a7f4b; --mid:#a15c00; --high:#b42318; --lowbg:#e6f4ec; --midbg:#fdf1de; --highbg:#fde8e6; }
-@media (prefers-color-scheme: dark) {
-  :root { --bg:#0f1318; --card:#171c23; --ink:#e8ecf1; --muted:#9aa5b1; --line:#2b333d; --accent:#6f95ff;
-          --low:#5fd08f; --mid:#f0b45a; --high:#ff8a80; --lowbg:#12281d; --midbg:#2e2412; --highbg:#321a18; }
-}
-* { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-header, main { max-width:980px; margin:0 auto; padding:0 16px; }
-header { padding-top:28px; }
-h1 { font-size:1.6rem; margin:0 0 4px; }
-.sub { color:var(--muted); margin:0 0 16px; }
-.status { display:inline-block; font-size:.85rem; padding:2px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
-.status.ok { color:var(--low); border-color:var(--low); }
-.status.bad { color:var(--high); border-color:var(--high); }
-.notice { background:var(--midbg); border:1px solid var(--mid); color:var(--ink); border-radius:8px; padding:10px 14px; margin:16px 0; font-size:.92rem; }
-nav { display:flex; gap:8px; margin:16px 0 0; }
-nav button { font:inherit; padding:8px 16px; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px 8px 0 0; cursor:pointer; }
-nav button[aria-selected="true"] { border-bottom-color:var(--card); font-weight:600; box-shadow:inset 0 -3px 0 var(--accent); }
-section.panel { background:var(--card); border:1px solid var(--line); border-radius:0 8px 8px 8px; padding:16px; margin-bottom:32px; }
-fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 16px; padding:8px 12px 14px; }
-legend { padding:0 6px; font-weight:600; }
-.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px 16px; }
-label { display:flex; flex-direction:column; gap:4px; font-size:.92rem; }
-label span { font-weight:500; }
-.hint { color:var(--muted); font-size:.8rem; }
-select, input[type=number], input[type=file] { font:inherit; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); width:100%; }
-select:focus, input:focus, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
-.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-button.primary { font:inherit; font-weight:600; padding:10px 20px; border:0; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; }
-button.secondary { font:inherit; padding:8px 14px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); cursor:pointer; }
-button:disabled { opacity:.55; cursor:progress; }
-.result { margin-top:16px; border-radius:10px; padding:16px; border:1px solid var(--line); }
+__THEME_CSS__
+/* predict page */
+.tabs { display:inline-flex; gap:4px; padding:4px; background:var(--sunk); border:1px solid var(--line); border-radius:999px; margin-bottom:22px; }
+.tabs button { font:500 .95rem var(--text); padding:9px 20px; border:0; border-radius:999px; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+.tabs button:hover { color:var(--ink); }
+.tabs button[aria-selected="true"] { background:var(--reagent); color:var(--reagent-ink); font-weight:600; }
+#presets { margin-bottom:8px; }
+#presets button { font-size:.88rem; }
+fieldset { border:0; margin:0; padding:26px 0 8px; min-width:0; position:relative; }
+fieldset::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background:var(--line); }
+legend { padding:0; margin-bottom:12px; font:700 1.1rem var(--display); letter-spacing:-.01em; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px 20px; padding-bottom:12px; }
+#one-form .row { padding-top:12px; border-top:1px solid var(--line); }
+.result { margin-top:24px; border-radius:16px; padding:clamp(16px,3vw,28px); background:var(--sunk); border:1.5px solid var(--line); }
 .result.low { background:var(--lowbg); border-color:var(--low); }
 .result.mid { background:var(--midbg); border-color:var(--mid); }
 .result.high { background:var(--highbg); border-color:var(--high); }
-.score { font-size:2rem; font-weight:700; line-height:1.1; }
-.badge { display:inline-block; font-weight:600; padding:2px 10px; border-radius:999px; border:1px solid currentColor; margin-left:8px; font-size:.95rem; vertical-align:middle; }
-.low .badge { color:var(--low); } .mid .badge { color:var(--mid); } .high .badge { color:var(--high); }
-.small { color:var(--muted); font-size:.85rem; }
-.error { color:var(--high); margin-top:12px; white-space:pre-line; }
-table { border-collapse:collapse; width:100%; font-size:.9rem; margin-top:12px; }
-th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
-th { position:sticky; top:0; background:var(--card); }
-td.num { text-align:right; font-variant-numeric:tabular-nums; }
-.tag { padding:1px 8px; border-radius:999px; font-size:.8rem; border:1px solid currentColor; }
-.tag.low { color:var(--low); } .tag.mid { color:var(--mid); } .tag.high { color:var(--high); }
-.scroll { max-height:420px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:12px; }
-.scroll table { margin:0; }
-footer { max-width:980px; margin:0 auto; padding:0 16px 32px; color:var(--muted); font-size:.85rem; }
-a { color:var(--accent); }
-[hidden] { display:none !important; }
+.score { font:800 clamp(1.6rem,4vw,2.4rem)/1.1 var(--display); letter-spacing:-.02em; display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
+.badge { font:600 .9rem var(--text); padding:4px 14px; border-radius:999px; background:var(--ink); color:var(--glass); letter-spacing:0; }
+.result .small { margin:14px 0 0; max-width:70ch; }
+.bars { margin-top:16px; display:grid; gap:8px; }
+.bars div { display:grid; grid-template-columns:minmax(80px,160px) 1fr 44px; gap:12px; align-items:center; font-size:.9rem; }
+.bars i { display:block; height:10px; border-radius:5px; background:var(--reagent); }
+.bars em { font-style:normal; text-align:right; color:var(--muted); }
+.drop { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:30px 16px; text-align:center; border:2px dashed var(--line); border-radius:16px; background:var(--sunk); transition:border-color .15s, background .15s; cursor:pointer; margin:16px 0 12px; }
+.drop:hover, .drop.over { border-color:var(--reagent); background:color-mix(in srgb, var(--reagent) 9%, var(--sunk)); }
+.drop strong { font:700 1.1rem var(--display); }
+.drop input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; padding:0; }
+.drop:focus-within { outline:3px solid var(--focus); outline-offset:2px; }
+.steps { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.labcta { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 24px; padding:18px 22px; border-radius:16px; background:var(--deep); color:var(--deep-ink); }
+.labcta strong { font:700 1.05rem var(--display); display:block; }
+.labcta span { color:var(--deep-muted); font-size:.92rem; }
+.labcta a { background:var(--deep-ink); color:var(--deep); }
+footer { max-width:1040px; margin:0 auto; padding:0 20px 40px; color:var(--muted); font-size:.85rem; }
+#many-msg .primary { margin:4px 12px 0 0; }
 </style>
 </head>
 <body>
-<header>
+__TOPBAR__
+<div class="hero"><div class="in">
   <h1>__TITLE__</h1>
-  <p class="sub">__INTRO__ <span id="status" class="status" role="status">Checking service&hellip;</span></p>
+  <p>__INTRO__</p>
+  <span id="status" class="status" role="status">Checking service&hellip;</span>
+</div></div>
+<main class="wrap">
+  <div class="sheet">
   <div class="notice">__NOTICE__</div>
-  <p class="small" id="lab-link" hidden>Have your own table of data? <a href="lab">Upload a CSV and get an algorithm recommendation &rarr;</a></p>
-</header>
-<main>
-  <nav role="tablist" aria-label="Mode">
+  <div class="tabs" role="tablist" aria-label="Mode">
     <button role="tab" id="tab-one" aria-selected="true" aria-controls="panel-one">__ONE_TITLE__</button>
     <button role="tab" id="tab-many" aria-selected="false" aria-controls="panel-many">__MANY_TITLE__</button>
-  </nav>
+  </div>
 
-  <section class="panel" id="panel-one" role="tabpanel" aria-labelledby="tab-one">
-    <div class="row" style="margin-bottom:12px" id="presets"><span class="small">Start from an example:</span></div>
+  <section id="panel-one" role="tabpanel" aria-labelledby="tab-one">
+    <div class="row" id="presets"><span class="small">Start from an example:</span></div>
     <form id="one-form" novalidate>
       __FORM__
       <div class="row"><button class="primary" type="submit" id="one-go">Predict</button><button class="secondary" type="reset" id="one-reset">Clear</button></div>
@@ -339,19 +329,24 @@ a { color:var(--accent); }
     <div id="one-result" aria-live="polite"></div>
   </section>
 
-  <section class="panel" id="panel-many" role="tabpanel" aria-labelledby="tab-many" hidden>
-    <p>Upload a CSV with one row per line (up to <span id="max-rows"></span>). The columns must have the same names as the form fields; use the template for the exact names. Extra columns, such as an ID, are kept in the results and not sent to the model.</p>
-    <div class="row">
-      <button type="button" class="secondary" id="template">Download a template CSV</button>
-      <input type="file" id="file" accept=".csv,text/csv" aria-label="CSV file">
-      <button class="primary" type="button" id="many-go" disabled>Predict all rows</button>
-    </div>
+  <section id="panel-many" role="tabpanel" aria-labelledby="tab-many" hidden>
+    <p style="margin-top:0;max-width:68ch">Upload a CSV with one row per line (up to <span id="max-rows"></span>). The columns must have the same names as the form fields; use the template for the exact names. Extra columns, such as an ID, are kept in the results and not sent to the model.</p>
+    <button type="button" class="secondary" id="template">Download a template CSV</button>
+    <label class="drop" id="drop"><strong id="drop-title">Choose a CSV file</strong><span class="small" id="drop-sub">or drop it here</span>
+      <input type="file" id="file" accept=".csv,text/csv" aria-label="CSV file"></label>
+    <div class="row"><button class="primary" type="button" id="many-go" disabled>Predict all rows</button></div>
     <div id="many-msg" aria-live="polite"></div>
     <div id="many-out" hidden>
-      <div class="row" style="margin-top:12px"><span id="many-summary"></span><button type="button" class="secondary" id="download">Download results (CSV)</button></div>
-      <div class="scroll"><table><thead id="many-head"></thead><tbody id="many-rows"></tbody></table></div>
+      <div class="row" style="margin:20px 0 12px;justify-content:space-between"><span id="many-summary"></span><button type="button" class="secondary" id="download">Download results (CSV)</button></div>
+      <div class="scroll" style="max-height:460px"><table><thead id="many-head"></thead><tbody id="many-rows"></tbody></table></div>
     </div>
   </section>
+  </div>
+
+  <div class="labcta" id="lab-link" hidden>
+    <div><strong>Have your own table of data?</strong><span>Upload any CSV and find out which algorithm to use, and with what settings.</span></div>
+    <a class="btn" href="lab">Open the advisor</a>
+  </div>
 </main>
 <footer>
   Built with the AI Experiment Lab platform &middot; <a href="docs">API documentation</a> &middot; <a href="https://github.com/sudhanshu230230/AI_Experiment_Lab">source</a>.
@@ -402,7 +397,7 @@ function convert(f, raw) {
   return v;
 }
 
-fetch("lab/limits").then(r => { if (r.ok) $("lab-link").hidden = false; }).catch(() => {});
+fetch("lab/limits").then(r => { if (r.ok) { labOn = true; $("lab-link").hidden = false; } }).catch(() => {});
 
 // ---- service status -----------------------------------------------------------------------
 async function checkStatus() {
@@ -449,14 +444,14 @@ function describe(p) {
     const probs = Object.entries(p.probabilities || {}).sort((a, b) => b[1] - a[1]);
     const top = probs[0] ? pct(probs[0][1]) : null;
     return {cls: top !== null && top >= 70 ? "low" : "mid", headline: "Predicted " + CFG.target + ": " + p.prediction,
-            badge: top !== null ? top + "% confident" : null,
+            badge: top !== null ? top + "% confident" : null, bars: probs.slice(0, 6),
             note: "Class probabilities: " + probs.slice(0, 6).map(([k, v]) => k + " " + pct(v) + "%").join(", ") + (probs.length > 6 ? ", ..." : "") + ". Model version " + (p.model_version ?? "n/a") + "."};
   }
   const prob = p.probability ?? p.churn_probability;
   const flagged = p.prediction === CFG.positive_label;
   const [cls, text] = level(prob, flagged);
   const word = CFG.legacy ? "Risk score" : "Score for " + CFG.target + " = " + CFG.positive_label;
-  return {cls, headline: word + " " + pct(prob) + " / 100", badge: text,
+  return {cls, headline: word + " " + pct(prob) + " / 100", badge: text, scale: {value: prob, threshold: p.threshold},
           note: (flagged ? "The model predicts " + CFG.positive_label : "The model predicts " + CFG.negative_label)
             + " (threshold " + pct(p.threshold) + "). Scores rank rows against each other and are not literal percentages. Model version " + (p.model_version ?? "n/a") + "."};
 }
@@ -475,7 +470,30 @@ $("one-form").addEventListener("submit", async (ev) => {
     const score = document.createElement("div"); score.className = "score"; score.textContent = d.headline;
     if (d.badge) { const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = d.badge; score.append(badge); }
     const note = document.createElement("p"); note.className = "small"; note.textContent = d.note;
-    box.append(score, note); out.append(box);
+    box.append(score);
+    if (d.scale) {
+      const sc = document.createElement("div"); sc.className = "scale"; sc.setAttribute("role", "img");
+      sc.setAttribute("aria-label", "Score " + pct(d.scale.value) + " on a scale of 0 to 100");
+      const tick = document.createElement("div"); tick.className = "tick"; tick.style.left = pct(d.scale.threshold) + "%";
+      const tl = document.createElement("b"); tl.textContent = "decision line " + pct(d.scale.threshold); tick.append(tl);
+      const pin = document.createElement("div"); pin.className = "pin"; pin.style.left = "0%";
+      sc.append(tick, pin);
+      const ends = document.createElement("div"); ends.className = "scale-ends";
+      for (const t of ["0 least likely", "100 most likely"]) { const e = document.createElement("span"); e.textContent = t; ends.append(e); }
+      box.append(sc, ends);
+      requestAnimationFrame(() => requestAnimationFrame(() => { pin.style.left = pct(d.scale.value) + "%"; }));
+    }
+    if (d.bars) {
+      const bars = document.createElement("div"); bars.className = "bars";
+      for (const [k, v] of d.bars) {
+        const r = document.createElement("div"); const n = document.createElement("span"); n.textContent = k;
+        const i = document.createElement("i"); i.style.width = Math.max(2, pct(v)) + "%"; const e = document.createElement("em"); e.textContent = pct(v) + "%";
+        const track = document.createElement("span"); track.append(i); r.append(n, track, e); bars.append(r);
+      }
+      box.append(bars);
+    }
+    box.append(note); out.append(box);
+    box.scrollIntoView({behavior: "smooth", block: "nearest"});
   } catch (e) {
     const p = document.createElement("div"); p.className = "error"; p.textContent = "Could not reach the service: " + e.message; out.append(p);
   } finally { btn.disabled = false; btn.textContent = "Predict"; }
@@ -501,7 +519,27 @@ function parseCSV(text) {
   return rows;
 }
 function csvEscape(v) { v = v === null || v === undefined ? "" : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+let labOn = false;
 function setMsg(text, isError) { const m = $("many-msg"); m.className = isError ? "error" : "small"; m.textContent = text; }
+function offerAdvisor(file) {
+  // A file of some other kind of data is not a dead end: hand it to the model advisor.
+  if (!labOn) return;
+  const m = $("many-msg");
+  const p = document.createElement("p"); p.className = "small";
+  p.textContent = "Want a model for your own data instead? The advisor tries several algorithms on this file and tells you which to use and with what settings.";
+  const b = document.createElement("button"); b.type = "button"; b.className = "primary"; b.textContent = "Find the best algorithm for this file";
+  const err = document.createElement("span"); err.className = "error";
+  b.addEventListener("click", async () => {
+    b.disabled = true; err.textContent = "";
+    try {
+      const r = await fetch("lab/analyze", {method: "POST", headers: {"Content-Type": "text/csv"}, body: file});
+      const body = await r.json().catch(() => null);
+      if (!r.ok) { const d = body && body.detail; throw new Error(typeof d === "string" ? d : "The advisor could not read this file."); }
+      window.location.href = "lab#upload=" + encodeURIComponent(body.upload_id) + "&name=" + encodeURIComponent(file.name);
+    } catch (e) { err.textContent = e.message; b.disabled = false; }
+  });
+  m.append(p, b, err);
+}
 const NAMES = FIELDS.map(f => f.name);
 const ID_RE = /^(customer_?id|id|row_?id|index|record_?id)$/i;
 
@@ -513,7 +551,12 @@ $("template").addEventListener("click", () => {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "template.csv"; a.click(); URL.revokeObjectURL(a.href);
 });
 
+for (const ev of ["dragenter", "dragover"]) $("drop").addEventListener(ev, () => $("drop").classList.add("over"));
+for (const ev of ["dragleave", "drop"]) $("drop").addEventListener(ev, () => $("drop").classList.remove("over"));
 $("file").addEventListener("change", async () => {
+  const picked = $("file").files[0];
+  $("drop-title").textContent = picked ? picked.name : "Choose a CSV file";
+  $("drop-sub").textContent = picked ? (picked.size / 1024 < 1024 ? Math.round(picked.size / 1024) + " KB" : (picked.size / 1048576).toFixed(1) + " MB") + ", click to choose another" : "or drop it here";
   parsed = null; results = null; $("many-go").disabled = true; $("many-out").hidden = true; setMsg("", false);
   const f = $("file").files[0]; if (!f) return;
   if (f.size > 5 * 1024 * 1024) { setMsg("That file is over 5 MB. Split it into smaller files.", true); return; }
@@ -521,7 +564,14 @@ $("file").addEventListener("change", async () => {
   if (rows.length < 2) { setMsg("The file needs a header row and at least one data row.", true); return; }
   const header = rows[0].map(h => h.trim());
   const missing = NAMES.filter(c => !header.includes(c));
-  if (missing.length) { setMsg("Missing column(s): " + missing.join(", ") + ". Use the template for the exact names.", true); return; }
+  if (missing.length) {
+    const mostly = missing.length > NAMES.length / 2;
+    setMsg((mostly ? "This file does not look like the data this page scores: " + missing.length + " of the " + NAMES.length + " expected columns are missing (" : "Missing column(s): ") +
+      missing.slice(0, 6).join(", ") + (missing.length > 6 ? ", ..." : "") + (mostly ? "). " : ". ") +
+      (mostly ? "This page only predicts with the model it was trained on." : "Use the template for the exact names."), true);
+    offerAdvisor(f);
+    return;
+  }
   const idCol = header.find(h => ID_RE.test(h) && !NAMES.includes(h));
   const body = rows.slice(1);
   if (body.length > CFG.max_rows) { setMsg("The file has " + body.length.toLocaleString() + " rows; the limit is " + CFG.max_rows.toLocaleString() + " per upload.", true); return; }
