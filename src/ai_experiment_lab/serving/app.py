@@ -210,8 +210,9 @@ def create_app(model_dir: str | Path | None = None,
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
-        """The bare URL opens the web page for people; the API documentation is at /docs."""
-        return RedirectResponse(url="app")
+        """The bare URL opens the advisor (upload your own CSV); /app is the churn demo and the API
+        documentation is at /docs. Without the advisor the churn page is the front door."""
+        return RedirectResponse(url="lab" if getattr(app.state, "lab", None) else "app")
 
     @app.get("/app", include_in_schema=False)
     def web_app() -> HTMLResponse:

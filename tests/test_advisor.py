@@ -203,3 +203,11 @@ def test_the_advisor_can_be_switched_off(monkeypatch, tmp_path):
     c = TestClient(create_app(model_dir=str(tmp_path / "none")))
     assert c.get("/lab").status_code == 404
     assert c.post("/lab/analyze", content=b"a,b").status_code == 404
+
+
+def test_a_file_already_uploaded_can_be_reopened_by_id(client):
+    raw = b"a,b,y\n" + b"".join(f"{i},{i % 7},{i % 2}\n".encode() for i in range(80))
+    up = client.post("/lab/analyze", content=raw, headers={"content-type": "text/csv"}).json()
+    again = client.get(f"/lab/uploads/{up['upload_id']}")
+    assert again.status_code == 200 and again.json()["rows"] == 80
+    assert client.get("/lab/uploads/nope").status_code == 404

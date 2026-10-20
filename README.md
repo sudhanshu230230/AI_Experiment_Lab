@@ -45,7 +45,7 @@ Key design rules (each has an ADR in [`docs/decisions/`](docs/decisions/)):
 
 ## Try it on your own data
 
-Open `/lab` on the live site, upload any tabular CSV (not time series, images, audio or video), and it tells you which algorithm to use and with which settings. See [docs/model-advisor.md](docs/model-advisor.md).
+The live site opens on the advisor (`/lab`): upload any tabular CSV (not time series, images, audio or video), and it tells you which algorithm to use and with which settings. See [docs/model-advisor.md](docs/model-advisor.md).
 
 ## Run it
 
